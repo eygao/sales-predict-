@@ -1,3 +1,5 @@
+rm(list = ls())
+
 #install.packages("streamR")
 #install.packages("ROAuth")
 library(ROAuth)
@@ -45,15 +47,28 @@ cor(tweet_df$friends_count, tweet_df$followers_count) #returns the correlation c
 
 
 # TRYING twitteR
-install.packages("twitteR")
+#install.packages("twitteR")
 library(twitteR)
+
+#Rachel credentials
 consumerKey = "YoP9WK1cvm2f3Kvp853l1mul1"   # from your app name
 consumerSecret = "1ainGfw5BgDP9In8OHh0NTwuQXOxU2UELIKM4TQi7ENTaowS8f"
 accessToken = "388312259-nmDrGpvpMoIUshN8kOxput9adglpxs5ArMZc62bj"
 accessSecret = "Izh67YOPYLPfPNfa5U10qqbZVFofUDH2Sfyqa5X4jpSHw"
 options(httr_oauth_cache=TRUE) # skip question appearing on console
+
+#Emily credentials
+consumerKey = "0c9bYRN6ZIVGjBVQQB9eXuzuQ"   # from your app name
+consumerSecret = "SImuevFXUWSU6RtwUtl0qwTwfdGNJCPO1dzJl85TQglBHz45YS"
+accessToken = "85217925-0zxobdY5cZoLOe5JpyP8H6JKd8iMsVdUljF5lMe8"
+accessSecret = "vIsWGoKTpB9yvBAyjIONdjZ8NsYVJmfGx2vHZSu9PrXDg"
+options(httr_oauth_cache=TRUE) # skip question appearing on console
+
+#authentication process
 setup_twitter_oauth(consumer_key = consumerKey, consumer_secret = consumerSecret,
                     access_token = accessToken, access_secret = accessSecret)
+
+#function to actually scrape Twitter
 express_tweets = userTimeline("expresslife",n=3200)
 express_tweets
 head(express_tweets)
