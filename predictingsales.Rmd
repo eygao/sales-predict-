@@ -2,3 +2,13 @@
 title: "predicting sales"
 output: html_document
 ---
+
+```{r}
+rm(list = ls())
+library(dplyr)
+library(knitr)
+library(readr)
+library(tidyr)
+library(stringr)
+library(ggplot2)
+```
