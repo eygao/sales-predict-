@@ -3,15 +3,25 @@
 library(ROAuth)
 library(streamR)
 
-#sets your working directory
+#sets your working directory - Rachel 
 setwd('/Users/rachelbrigell/Dropbox/HSPH/Spring 2 2016/BIO 260/sales-predict-')
+#sets your working directory - Emily
+setwd("~/Dropbox (Personal)/Spring 2015/Data Science/sales-predict-")
 
-#create your OAuth credential
+#create your OAuth credential-Rachel
 credential <- OAuthFactory$new(consumerKey='YoP9WK1cvm2f3Kvp853l1mul1',
                                consumerSecret='1ainGfw5BgDP9In8OHh0NTwuQXOxU2UELIKM4TQi7ENTaowS8f',
                                requestURL='https://api.twitter.com/oauth/request_token',
                                accessURL='https://api.twitter.com/oauth/access_token',
                                authURL='https://api.twitter.com/oauth/authorize')
+#create your OAuth credential-Emily
+credential <- OAuthFactory$new(consumerKey='0c9bYRN6ZIVGjBVQQB9eXuzuQ',
+                               consumerSecret='SImuevFXUWSU6RtwUtl0qwTwfdGNJCPO1dzJl85TQglBHz45YS',
+                               requestURL='https://api.twitter.com/oauth/request_token',
+                               accessURL='https://api.twitter.com/oauth/access_token',
+                               authURL='https://api.twitter.com/oauth/authorize')
+
+
 
 #authentication process
 options(RCurlOptions = list(cainfo = system.file("CurlSSL", "cacert.pem", package = "RCurl")))
@@ -20,8 +30,7 @@ credential$handshake(cainfo="cacert.pem")
 
 #function to actually scrape Twitter
 filterStream( file.name="express_tweets_1.json",
-              follow="251294686", oauth=credential, tweets=1000, timeout=10, lang='en' )
-
+              follow="251294686", oauth=credential, tweets=10, timeout=30, lang='en' )
 
 #Parses the tweets
 tweet_df <- parseTweets(tweets='express_tweets_1.json')
