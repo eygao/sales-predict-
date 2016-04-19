@@ -60,7 +60,7 @@ options(httr_oauth_cache=TRUE) # skip question appearing on console
 #Emily credentials
 consumerKey = "0c9bYRN6ZIVGjBVQQB9eXuzuQ"   # from your app name
 consumerSecret = "SImuevFXUWSU6RtwUtl0qwTwfdGNJCPO1dzJl85TQglBHz45YS"
-accessToken = "85217925-0zxobdY5cZoLOe5JpyP8H6JKd8iMsVdUljF5lMe8"
+accessToken = "385217925-0zxobdY5cZoLOe5JpyP8H6JKd8iMsVdUljF5lMe8"
 accessSecret = "vIsWGoKTpB9yvBAyjIONdjZ8NsYVJmfGx2vHZSu9PrXDg"
 options(httr_oauth_cache=TRUE) # skip question appearing on console
 
