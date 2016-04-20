@@ -73,3 +73,5 @@ express_tweets = userTimeline("expresslife",n=3200)
 express_tweets
 head(express_tweets)
 as.data.frame.list(express_tweets)
+
+?userTimeline
