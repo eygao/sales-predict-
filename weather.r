@@ -16,6 +16,7 @@ library(rwunderground)
 
 # wunderground key (Nina): dc1f7cb13c35da6d
 # wunderground key (Emily): c52d7ad36cc9d20f
+# wunderground key (Jon): 27e1fb02aa0bc179
 
 # create date range
 date.range <- seq.Date(from=as.Date('2015-6-20'), 
@@ -42,4 +43,3 @@ weather_NewYork <- ldply(ny)
 
 # save new york data as .csv
 write.csv(weather_NewYork_2016, file = "weather_NewYork.csv", row.names=FALSE)
-
