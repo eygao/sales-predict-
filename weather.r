@@ -73,8 +73,8 @@ for (i in seq_along(date.range)) {
 }
 
 # stack loop responses for weather data
-weather_NewYork <- ldply(ny)
+weather_NewYork_2 <- ldply(ny)
 
 # save new york data as .csv
-write.csv(weather_NewYork, file = "weather_NewYork_04-04_2014-15.csv", row.names=FALSE)
+write.csv(weather_NewYork_2, file = "weather_NewYork_04-04_2014-15.csv", row.names=FALSE)
 
