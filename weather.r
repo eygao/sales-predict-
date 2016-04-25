@@ -73,8 +73,37 @@ for (i in seq_along(date.range)) {
 }
 
 # stack loop responses for weather data
-weather_NewYork_2 <- ldply(ny)
+weather_NewYork <- ldply(ny)
 
 # save new york data as .csv
-write.csv(weather_NewYork_2, file = "weather_NewYork_04-04_2014-15.csv", row.names=FALSE)
+write.csv(weather_NewYork, file = "weather_NewYork_04-04_2014-15.csv", row.names=FALSE)
 
+#######################################################################
+################# YEAR 1: LOS ANGELES, CALIFORNIA #####################
+#######################################################################
+
+# create date range
+date.range <- seq.Date(from=as.Date('2016-4-20'), 
+                       to=as.Date('2016-4-21'), by='1 day')
+
+# remove "-" from date range
+date.range <- str_replace_all(date.range, "[[:punct:]]", "")
+
+# create empty vector to store dates
+ca <- vector(mode='list', length=length(date.range))
+
+# pull weather data from wunderground for all dates in date range
+# pause for 10 seconds after each iteration (API only allows 10 requests per minute)
+# city = New York
+for (i in seq_along(date.range)) {
+  print(date.range[i])
+  ca[[i]] <- history_daily(set_location(
+    territory = "California", city = "Los Angeles"), date.range[i])
+  Sys.sleep(10)
+}
+
+# stack loop responses for weather data
+weather_LA <- ldply(ny)
+
+# save new york data as .csv
+write.csv(weather_LA, file = "weather_test.csv", row.names=FALSE)
