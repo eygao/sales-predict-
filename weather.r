@@ -18,6 +18,7 @@ library(rwunderground)
 # wunderground key (Emily): c52d7ad36cc9d20f
 # wunderground key (Jon): 27e1fb02aa0bc179
 # wunderground key (Rachel): 11cd5ba513f919d8
+# wunderground key (Gautam): ed4ed5e0962bd020
 
 #######################################################################
 ################## YEAR 1: NEW YORK, NEW YORK #########################
