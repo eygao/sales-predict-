@@ -103,29 +103,3 @@ weather_Houston <- ldply(tx)
 
 # save houston data as .csv
 write.csv(weather_Houston, file = "weather_Houston_2013-2016.csv", row.names=FALSE)
-
-## Weather Wrangling
-#######################################################################
-
-new_york <- read_csv("weather_NewYork_2013-2016.csv")
-los_angeles <- read_csv("weather_LA_2013-2016.csv")
-chicago <- read_csv("weather_Chicago_2013-2016.csv")
-houston <- read_csv("weather_Houston_2013-2016.csv")
-
-new_york <- new_york %>% select(date, snow, mean_temp, max_temp, min_temp) %>%
-  rename (ny_snow = snow, ny_mean_temp = mean_temp, 
-          ny_max_temp = max_temp, ny_min_temp = min_temp)
-
-los_angeles <- los_angeles %>% select(date, snow, mean_temp, max_temp, min_temp) %>%
-  rename (la_snow = snow, la_mean_temp = mean_temp, 
-        la_max_temp = max_temp, la_min_temp = min_temp)
-
-chicago <- chicago %>% select(date, snow, mean_temp, max_temp, min_temp) %>%
-  rename (chi_snow = snow, chi_mean_temp = mean_temp, 
-          chi_max_temp = max_temp, chi_min_temp = min_temp)
-
-houston <- houston %>% select(date, snow, mean_temp, max_temp, min_temp) %>%
-  rename (hou_snow = snow, hou_mean_temp = mean_temp, 
-          hou_max_temp = max_temp, hou_min_temp = min_temp)
-
-weather_joined <- full_join(new_york, los_angeles, chicago, houston, by = "date")
