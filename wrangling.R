@@ -126,7 +126,7 @@ weather <- weather %>% mutate(date2 = date) %>%
 # join weather data and unemployment data
 weather_unemp <- left_join(weather, unemp, by = "date_y_m")
 
-# remove year_month column
+# remove year-month column
 weather_unemp <- stock_unemp %>% select(-date_y_m)
 
 # combine weather, stock, and unemployment data
