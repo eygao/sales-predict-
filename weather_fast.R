@@ -73,8 +73,6 @@ write.csv(weather_LA, file = "weather_LA_2013-2016.csv", row.names=FALSE)
 il <- vector(mode='list', length=length(date.range))
 
 # pull weather data from wunderground for all dates in date range
-# pause for 10 seconds after each iteration (API only allows 10 requests per minute)
-# city = New York
 for (i in seq_along(date.range)) {
   il[[i]] <- history_daily(set_location(
     territory = "Illinois", city = "Chicago"), date.range[i])
@@ -95,6 +93,7 @@ tx <- vector(mode='list', length=length(date.range))
 
 # pull weather data from wunderground for all dates in date range
 for (i in seq_along(date.range)) {
+  print(date.range[i])
   tx[[i]] <- history_daily(set_location(
     territory = "Texas", city = "Houston"), date.range[i])
 }
