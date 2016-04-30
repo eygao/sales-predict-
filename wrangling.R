@@ -11,6 +11,9 @@ library(ggrepel)
 library(lubridate)
 library(rwunderground)
 
+setwd("~/Documents/HSPH/DataScience/sales-predict-")
+
+
 ## Weather Wrangling
 #######################################################################
 
@@ -53,7 +56,7 @@ loft <- read.csv(loft_URL)
 loft$Date <- as.Date(loft$Date, "%Y-%m-%d")
 
 # rename columns
-loft <- loft %>%  rename (date = Date, loft_open = Open, loft_high = High, loft_low = Low, 
+loft_stocks <- loft %>%  rename (date = Date, loft_open = Open, loft_high = High, loft_low = Low, 
                           loft_close = Close, loft_volume = Volume, 
                           loft_adj_close = Adj.Close)
 
@@ -67,7 +70,7 @@ exp <- read.csv(exp_URL)
 exp$Date <- as.Date(exp$Date, "%Y-%m-%d")
 
 # rename columns
-exp <- exp %>%  rename (date = Date, expr_open = Open, expr_high = High, expr_low = Low, 
+exp_stocks <- exp %>%  rename (date = Date, expr_open = Open, expr_high = High, expr_low = Low, 
                         expr_close = Close, expr_volume = Volume, 
                         expr_adj_close = Adj.Close)
 
@@ -81,13 +84,9 @@ gap <- read.csv(gap_URL)
 gap$Date <- as.Date(gap$Date, "%Y-%m-%d")
 
 # rename columns
-gap <- gap %>%  rename (date = Date, gap_open = Open, gap_high = High, gap_low = Low, 
+gap_stocks <- gap %>%  rename (date = Date, gap_open = Open, gap_high = High, gap_low = Low, 
                         gap_close = Close, gap_volume = Volume, 
                         gap_adj_close = Adj.Close)
-
-# join 3 stock price files together
-loft_exp <- full_join(loft, exp, by = "date")
-stocks <- full_join(loft_exp, gap, by = "date")
 
 ## Unemployment Wrangling
 #######################################################################
@@ -127,8 +126,16 @@ weather <- weather %>% mutate(date2 = date) %>%
 weather_unemp <- left_join(weather, unemp, by = "date_y_m")
 
 # remove year-month column
-weather_unemp <- stock_unemp %>% select(-date_y_m)
+weather_unemp <- weather_unemp %>% select(-date_y_m)
 
-# combine weather, stock, and unemployment data
-joined <- full_join(stocks, weather_unemp, by= "date")
+# JOIN for EXPRESS
+express <- full_join(exp_stocks, weather_unemp, by= "date")
 
+# JOIN for GAP
+gap <- full_join(exp_stocks, weather_unemp, by= "date")
+
+# JOIN for JCREW
+jcrew <- weather_unemp
+
+# JOIN for LOFT
+loft <- full_join(loft_stocks, weather_unemp, by= "date")
