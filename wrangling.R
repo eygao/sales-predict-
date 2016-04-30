@@ -130,12 +130,30 @@ weather_unemp <- weather_unemp %>% select(-date_y_m)
 
 # JOIN for EXPRESS
 express <- full_join(exp_stocks, weather_unemp, by= "date")
+exp_tweets <- read_csv("expresstweets.csv")
+express <- full_join(exp_tweets, express, by = "date")
+
+write.csv(express, file = "express_joined.csv", row.names=FALSE)
 
 # JOIN for GAP
-gap <- full_join(exp_stocks, weather_unemp, by= "date")
+gap <- full_join(gap_stocks, weather_unemp, by= "date")
+gap_tweets <- read_csv("gaptweets.csv")
+gap <- full_join(gap_tweets, gap, by = "date")
+
+write.csv(gap, file = "gap_joined.csv", row.names=FALSE)
 
 # JOIN for JCREW
 jcrew <- weather_unemp
+jcrew_tweets <- read_csv("jcrewtweets.csv")
+jcrew <- full_join(jcrew_tweets, jcrew, by = "date")
+
+write.csv(jcrew, file = "jcrew_joined.csv", row.names=FALSE)
 
 # JOIN for LOFT
 loft <- full_join(loft_stocks, weather_unemp, by= "date")
+loft_tweets <- read_csv("lofttweets.csv")
+loft <- full_join(loft_tweets, loft, by = "date")
+
+write.csv(loft, file = "loft_joined.csv", row.names=FALSE)
+
+
