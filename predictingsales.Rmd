@@ -5,10 +5,115 @@ output: html_document
 
 ```{r}
 rm(list = ls())
+library(plyr)
 library(dplyr)
-library(knitr)
 library(readr)
 library(tidyr)
-library(stringr)
 library(ggplot2)
+library(countrycode)
+library(lubridate)
+library(stringr)
+library(XML)
+library(broom)
+library(directlabels)
+library(gridExtra)
+library(caret)
 ```
+
+1. Load in data
+```{r}
+
+```
+
+2. EDA and visualizations
+```{r}
+
+```
+
+3. Split data into training and test sets 80:20
+
+Use the following methods to build a model predicting sales on the training set:
+  1. OLS
+  2. logistic regression 
+  
+EXPRESS
+```{r}
+#split data
+inTrain <- createDataPartition(y = dat_express$y, p=0.8)$Resample
+
+#define train and test set
+train_set_express <- slice(dat_express, inTrain) 
+test_set_express <- slice(dat_express, -inTrain) 
+
+#fit OLS regression to train set
+express_ols <- train_set %>% lm(express_sale ~ precipitationNY + precipitationLA + precipitationH + precipitationCHI+ snowNY + snowLA + snowH + snowCHI + tempNY + tempLA + tempH + tempCHI + express_stock + unemployment + holiday + time_since_last_express, data=.)
+
+#fit glm logistic regression to train set
+express_glm <- train_set %>% glm(express_sale ~ precipitationNY + precipitationLA + precipitationH + precipitationCHI+ snowNY + snowLA + snowH + snowCHI + tempNY + tempLA + tempH + tempCHI + express_stock + unemployment + holiday + time_since_last_express, data=. , family = "binomial")
+
+#try ols on test set to check accuracy
+test_set <- mutate(test_set, fhat_express_ols = predict(express_ols, newdata = test_set, type = "response")) %>%
+  mutate(pred_express_ols=round(fhat_express_ols)) %>% mutate(accuracy_express_ols = (ifelse(pred_express_ols == y, 1, 0))) 
+
+table(test_set$accuracy_express_ols)
+
+#try glm on test set to check accuracy
+test_set <- mutate(test_set, fhat_express_glm = predict(express_glm, newdata = test_set, type = "response")) %>%
+  mutate(pred_express_glm=round(fhat_express_glm)) %>% mutate(accuracy_express_glm = (ifelse(pred_express_glm == y, 1, 0))) 
+
+table(test_set$accuracy_glm)
+
+#confusion matrix ols
+tab <- table(test_set$pred_express_ols, test_set$express_sale)
+conf_matrix <- confusionMatrix(tab)
+conf_matrix$table
+conf_matrix$overall["Accuracy"]
+
+#confusion matrix glm
+tab <- table(test_set$pred_express_glm, test_set$express_sale)
+conf_matrix <- confusionMatrix(tab)
+conf_matrix$table
+conf_matrix$overall["Accuracy"]
+```
+
+GAP
+```{r}
+#split data
+inTrain <- createDataPartition(y = dat_express$y, p=0.8)$Resample
+
+#define train and test set
+train_set_express <- slice(dat_express, inTrain) 
+test_set_express <- slice(dat_express, -inTrain) 
+
+#fit OLS regression to train set
+express_ols <- train_set %>% lm(express_sale ~ precipitationNY + precipitationLA + precipitationH + precipitationCHI+ snowNY + snowLA + snowH + snowCHI + tempNY + tempLA + tempH + tempCHI + express_stock + unemployment + holiday + time_since_last_express, data=.)
+
+#fit glm logistic regression to train set
+express_glm <- train_set %>% glm(express_sale ~ precipitationNY + precipitationLA + precipitationH + precipitationCHI+ snowNY + snowLA + snowH + snowCHI + tempNY + tempLA + tempH + tempCHI + express_stock + unemployment + holiday + time_since_last_express, data=. , family = "binomial")
+
+#try ols on test set to check accuracy
+test_set <- mutate(test_set, fhat_express_ols = predict(express_ols, newdata = test_set, type = "response")) %>%
+  mutate(pred_express_ols=round(fhat_express_ols)) %>% mutate(accuracy_express_ols = (ifelse(pred_express_ols == y, 1, 0))) 
+
+table(test_set$accuracy_express_ols)
+
+#try glm on test set to check accuracy
+test_set <- mutate(test_set, fhat_express_glm = predict(express_glm, newdata = test_set, type = "response")) %>%
+  mutate(pred_express_glm=round(fhat_express_glm)) %>% mutate(accuracy_express_glm = (ifelse(pred_express_glm == y, 1, 0))) 
+
+table(test_set$accuracy_glm)
+
+#confusion matrix ols
+tab <- table(test_set$pred_express_ols, test_set$express_sale)
+conf_matrix <- confusionMatrix(tab)
+conf_matrix$table
+conf_matrix$overall["Accuracy"]
+
+#confusion matrix glm
+tab <- table(test_set$pred_express_glm, test_set$express_sale)
+conf_matrix <- confusionMatrix(tab)
+conf_matrix$table
+conf_matrix$overall["Accuracy"]
+```
+
+
