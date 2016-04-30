@@ -79,41 +79,119 @@ conf_matrix$overall["Accuracy"]
 GAP
 ```{r}
 #split data
-inTrain <- createDataPartition(y = dat_express$y, p=0.8)$Resample
+inTrain <- createDataPartition(y = dat_gap$y, p=0.8)$Resample
 
 #define train and test set
-train_set_express <- slice(dat_express, inTrain) 
-test_set_express <- slice(dat_express, -inTrain) 
+train_set_gap <- slice(dat_gap, inTrain) 
+test_set_gap <- slice(dat_gap, -inTrain) 
 
 #fit OLS regression to train set
-express_ols <- train_set %>% lm(express_sale ~ precipitationNY + precipitationLA + precipitationH + precipitationCHI+ snowNY + snowLA + snowH + snowCHI + tempNY + tempLA + tempH + tempCHI + express_stock + unemployment + holiday + time_since_last_express, data=.)
+gap_ols <- train_set %>% lm(gap_sale ~ precipitationNY + precipitationLA + precipitationH + precipitationCHI+ snowNY + snowLA + snowH + snowCHI + tempNY + tempLA + tempH + tempCHI + gap_stock + unemployment + holiday + time_since_last_gap, data=.)
 
 #fit glm logistic regression to train set
-express_glm <- train_set %>% glm(express_sale ~ precipitationNY + precipitationLA + precipitationH + precipitationCHI+ snowNY + snowLA + snowH + snowCHI + tempNY + tempLA + tempH + tempCHI + express_stock + unemployment + holiday + time_since_last_express, data=. , family = "binomial")
+gap_glm <- train_set %>% glm(gap_sale ~ precipitationNY + precipitationLA + precipitationH + precipitationCHI+ snowNY + snowLA + snowH + snowCHI + tempNY + tempLA + tempH + tempCHI + gap_stock + unemployment + holiday + time_since_last_gap, data=. , family = "binomial")
 
 #try ols on test set to check accuracy
-test_set <- mutate(test_set, fhat_express_ols = predict(express_ols, newdata = test_set, type = "response")) %>%
-  mutate(pred_express_ols=round(fhat_express_ols)) %>% mutate(accuracy_express_ols = (ifelse(pred_express_ols == y, 1, 0))) 
+test_set <- mutate(test_set, fhat_gap_ols = predict(gap_ols, newdata = test_set, type = "response")) %>%
+  mutate(pred_gap_ols=round(fhat_gap_ols)) %>% mutate(accuracy_gap_ols = (ifelse(pred_gap_ols == y, 1, 0))) 
 
-table(test_set$accuracy_express_ols)
+table(test_set$accuracy_gap_ols)
 
 #try glm on test set to check accuracy
-test_set <- mutate(test_set, fhat_express_glm = predict(express_glm, newdata = test_set, type = "response")) %>%
-  mutate(pred_express_glm=round(fhat_express_glm)) %>% mutate(accuracy_express_glm = (ifelse(pred_express_glm == y, 1, 0))) 
+test_set <- mutate(test_set, fhat_gap_glm = predict(gap_glm, newdata = test_set, type = "response")) %>%
+  mutate(pred_gap_glm=round(fhat_gap_glm)) %>% mutate(accuracy_gap_glm = (ifelse(pred_gap_glm == y, 1, 0))) 
 
 table(test_set$accuracy_glm)
 
 #confusion matrix ols
-tab <- table(test_set$pred_express_ols, test_set$express_sale)
+tab <- table(test_set$pred_gap_ols, test_set$gap_sale)
 conf_matrix <- confusionMatrix(tab)
 conf_matrix$table
 conf_matrix$overall["Accuracy"]
 
 #confusion matrix glm
-tab <- table(test_set$pred_express_glm, test_set$express_sale)
+tab <- table(test_set$pred_gap_glm, test_set$gap_sale)
 conf_matrix <- confusionMatrix(tab)
 conf_matrix$table
 conf_matrix$overall["Accuracy"]
 ```
 
+LOFT
+```{r}
+#split data
+inTrain <- createDataPartition(y = dat_loft$y, p=0.8)$Resample
 
+#define train and test set
+train_set_loft <- slice(dat_loft, inTrain) 
+test_set_loft <- slice(dat_loft, -inTrain) 
+
+#fit OLS regression to train set
+loft_ols <- train_set %>% lm(loft_sale ~ precipitationNY + precipitationLA + precipitationH + precipitationCHI+ snowNY + snowLA + snowH + snowCHI + tempNY + tempLA + tempH + tempCHI + loft_stock + unemployment + holiday + time_since_last_loft, data=.)
+
+#fit glm logistic regression to train set
+loft_glm <- train_set %>% glm(loft_sale ~ precipitationNY + precipitationLA + precipitationH + precipitationCHI+ snowNY + snowLA + snowH + snowCHI + tempNY + tempLA + tempH + tempCHI + loft_stock + unemployment + holiday + time_since_last_loft, data=. , family = "binomial")
+
+#try ols on test set to check accuracy
+test_set <- mutate(test_set, fhat_loft_ols = predict(loft_ols, newdata = test_set, type = "response")) %>%
+  mutate(pred_loft_ols=round(fhat_loft_ols)) %>% mutate(accuracy_loft_ols = (ifelse(pred_loft_ols == y, 1, 0))) 
+
+table(test_set$accuracy_loft_ols)
+
+#try glm on test set to check accuracy
+test_set <- mutate(test_set, fhat_loft_glm = predict(loft_glm, newdata = test_set, type = "response")) %>%
+  mutate(pred_loft_glm=round(fhat_loft_glm)) %>% mutate(accuracy_loft_glm = (ifelse(pred_loft_glm == y, 1, 0))) 
+
+table(test_set$accuracy_glm)
+
+#confusion matrix ols
+tab <- table(test_set$pred_loft_ols, test_set$loft_sale)
+conf_matrix <- confusionMatrix(tab)
+conf_matrix$table
+conf_matrix$overall["Accuracy"]
+
+#confusion matrix glm
+tab <- table(test_set$pred_loft_glm, test_set$loft_sale)
+conf_matrix <- confusionMatrix(tab)
+conf_matrix$table
+conf_matrix$overall["Accuracy"]
+```
+
+JCREW
+```{r}
+#split data
+inTrain <- createDataPartition(y = dat_jcrew$y, p=0.8)$Resample
+
+#define train and test set
+train_set_jcrew <- slice(dat_jcrew, inTrain) 
+test_set_jcrew <- slice(dat_jcrew, -inTrain) 
+
+#fit OLS regression to train set
+jcrew_ols <- train_set %>% lm(jcrew_sale ~ precipitationNY + precipitationLA + precipitationH + precipitationCHI+ snowNY + snowLA + snowH + snowCHI + tempNY + tempLA + tempH + tempCHI + jcrew_stock + unemployment + holiday + time_since_last_jcrew, data=.)
+
+#fit glm logistic regression to train set
+jcrew_glm <- train_set %>% glm(jcrew_sale ~ precipitationNY + precipitationLA + precipitationH + precipitationCHI+ snowNY + snowLA + snowH + snowCHI + tempNY + tempLA + tempH + tempCHI + jcrew_stock + unemployment + holiday + time_since_last_jcrew, data=. , family = "binomial")
+
+#try ols on test set to check accuracy
+test_set <- mutate(test_set, fhat_jcrew_ols = predict(jcrew_ols, newdata = test_set, type = "response")) %>%
+  mutate(pred_jcrew_ols=round(fhat_jcrew_ols)) %>% mutate(accuracy_jcrew_ols = (ifelse(pred_jcrew_ols == y, 1, 0))) 
+
+table(test_set$accuracy_jcrew_ols)
+
+#try glm on test set to check accuracy
+test_set <- mutate(test_set, fhat_jcrew_glm = predict(jcrew_glm, newdata = test_set, type = "response")) %>%
+  mutate(pred_jcrew_glm=round(fhat_jcrew_glm)) %>% mutate(accuracy_jcrew_glm = (ifelse(pred_jcrew_glm == y, 1, 0))) 
+
+table(test_set$accuracy_glm)
+
+#confusion matrix ols
+tab <- table(test_set$pred_jcrew_ols, test_set$jcrew_sale)
+conf_matrix <- confusionMatrix(tab)
+conf_matrix$table
+conf_matrix$overall["Accuracy"]
+
+#confusion matrix glm
+tab <- table(test_set$pred_jcrew_glm, test_set$jcrew_sale)
+conf_matrix <- confusionMatrix(tab)
+conf_matrix$table
+conf_matrix$overall["Accuracy"]
+```
