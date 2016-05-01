@@ -190,19 +190,48 @@ loft <- loft %>%
 ## Create a joined file for visualization
 #######################################################################
 
+# EXPRESS
 # filter express for only sale dates
-express_filtered <- express %>% filter(sale == 1)
+express_filtered <- express %>%
+  filter(sale == 1) %>%
+  select(date, word, sale) %>%
+  rename(expressword = word) %>%
+  rename(expresssale = sale)
 
+# GAP
 # filter gap for only sale dates
-gap_filtered <- gap %>% filter(sale == 1)
+gap_filtered <- gap %>% 
+  filter(sale == 1) %>%
+  select(date, word, sale) %>%
+  rename(gapword = word) %>%
+  rename(gapsale = sale)
 
+# JCREW
 # filter jcrew for only sale dates
-jcrew_filtered <- jcrew %>% filter(sale == 1)
+jcrew_filtered <- jcrew %>% 
+  filter(sale == 1) %>%
+  select(date, word, sale) %>%
+  rename(jcrewword = word) %>%
+  rename(jcrewsale = sale)
 
+#LOFT
 # filter loft for only sale dates
-loft_filtered <- loft %>% filter(sale == 1)
+loft_filtered <- loft %>% 
+  filter(sale == 1) %>%
+  select(date, word, sale) %>%
+  rename(loftword = word) %>%
+  rename(loftsale = sale)
 
+# join filtered data sets together -- only word & outcome columns
 joined <- full_join(express_filtered, gap_filtered, by = "date")
 joined <- full_join(joined, jcrew_filtered, by = "date")
 joined <- full_join(joined, loft_filtered, by = "date")
 
+# merge weather, unemployment, & stock data
+joined <- left_join(joined, weather_unemp, by = "date")
+joined <- left_join(joined, exp_stocks, by = "date")
+joined <- left_join(joined, gap_stocks, by = "date")
+joined <- left_join(joined, loft_stocks, by = "date")
+
+# save joined dataset for visualizations as a .csv
+write.csv(joined, file = "joined_for_visualization.csv", row.names=FALSE)
