@@ -5,30 +5,301 @@ output: html_document
 
 ```{r}
 rm(list = ls())
+library(httr)
 library(plyr)
 library(dplyr)
+library(knitr)
 library(readr)
 library(tidyr)
-library(ggplot2)
-library(countrycode)
-library(lubridate)
 library(stringr)
-library(XML)
-library(broom)
-library(directlabels)
+library(ggplot2)
 library(gridExtra)
+library(ggrepel)
+library(lubridate)
+library(rwunderground)
+library(tidytext)
 library(caret)
 ```
 
-1. Load in data
+1. Load and wrangle the data 
 ```{r}
+setwd('/Users/emilygao/Dropbox (Personal)/Spring 2015/Data Science/sales-predict-')
 
+
+## Weather Wrangling - Creates One File for Weather
+#######################################################################
+
+# read in weather csv files for 4 cities
+new_york <- read_csv("weather_NewYork_2013-2016.csv")
+los_angeles <- read_csv("weather_LA_2013-2016.csv")
+chicago <- read_csv("weather_Chicago_2013-2016.csv")
+houston <- read_csv("weather_Houston_2013-2016.csv")
+
+# keep date, snow, mean_temp, max_temp, min_temp, rename columns
+new_york <- new_york %>% select(date, snow, mean_temp, precip) %>%
+  rename (ny_snow = snow, ny_mean_temp = mean_temp, 
+          ny_precip = precip)
+
+los_angeles <- los_angeles %>% select(date, snow, mean_temp, precip) %>%
+  rename (la_snow = snow, la_mean_temp = mean_temp, 
+          la_precip = precip)
+
+chicago <- chicago %>% select(date, snow, mean_temp, precip) %>%
+  rename (chi_snow = snow, chi_mean_temp = mean_temp, 
+          chi_precip = precip)
+
+houston <- houston %>% select(date, snow, mean_temp, precip) %>%
+  rename (hou_snow = snow, hou_mean_temp = mean_temp, 
+          hou_precip = precip)
+
+# join 4 cities together
+ny_la <- full_join(new_york, los_angeles, by = "date")
+ny_la_chi <- full_join(ny_la, chicago, by = "date")
+weather <- full_join(ny_la_chi, houston, by = "date")
+
+## Stock Wrangling - Create individual store files for stock prices
+#######################################################################
+
+# read in LOFT stock data
+loft_URL <- "http://ichart.finance.yahoo.com/table.csv?s=ASNA"
+loft <- read.csv(loft_URL)
+
+# convert the date from a string to a Date type
+loft$Date <- as.Date(loft$Date, "%Y-%m-%d")
+
+# rename columns
+loft_stocks <- loft %>% select(Date, Adj.Close) %>% 
+  rename (date = Date, loft_adj_close = Adj.Close)
+
+####
+
+# read in Express stock data 
+exp_URL <- "http://ichart.finance.yahoo.com/table.csv?s=EXPR"
+exp <- read.csv(exp_URL)
+
+# convert the date from a string to a Date type
+exp$Date <- as.Date(exp$Date, "%Y-%m-%d")
+
+# rename columns
+exp_stocks <- exp %>% select(Date, Adj.Close) %>% 
+  rename (date = Date, expr_adj_close = Adj.Close)
+
+####
+
+# read in Gap stock data 
+gap_URL <- "http://ichart.finance.yahoo.com/table.csv?s=GPS"
+gap <- read.csv(gap_URL)
+
+# convert the date from a string to a Date type
+gap$Date <- as.Date(gap$Date, "%Y-%m-%d")
+
+# rename columns
+gap_stocks <- gap %>% select(Date, Adj.Close) %>%
+  rename (date = Date, gap_adj_close = Adj.Close)
+
+## Unemployment Wrangling - Create one file for unemployment data
+#######################################################################
+
+# read in unemployment data
+unemp_wide <- read_csv("Unemployment_Labor_ByMonth.csv")
+
+# rename month columns from abbreviations to numbers
+unemp_wide <- unemp_wide %>% rename("01" = Jan, "02" = Feb, "03" = Mar, "04" = Apr,
+                                    "05" = May, "06" = Jun, "07" = Jul, "08" = Aug,
+                                    "09" = Sep, "10" = Oct,"11" = Nov, "12" = Dec)
+
+# convert unemployement data from wide to long
+unemp <- unemp_wide %>% gather(month, unemployment, 2:13)
+
+# create column for year-month
+unemp$date_month = paste(unemp$Year, unemp$month, sep="-")
+
+# rename date column and select only year-month and unemployment columns
+unemp <- unemp %>% rename(date_y_m = date_month) %>% select(date_y_m, unemployment) %>%
+  mutate(date_y_m = as.character(date_y_m))
+
+## Join Unemployment Data + Stock Data + Weather
+#######################################################################
+
+# remove time from weather date column
+weather <- weather %>% mutate (date = as.Date(date, format = "%Y/%m/%d"))
+
+# create column in weather to join with unemployment data (year-month)
+weather <- weather %>% mutate(date2 = date) %>% 
+  separate(date2, c("year", "month", "day"), sep = "-", convert = TRUE, fill = "right") %>% 
+  mutate(month = ifelse(month < 10, paste(0, month, sep = ""), month)) %>%
+  mutate(date_y_m = paste(as.character(year), as.character(month), sep = "-")) %>%
+  select(-c(year, month, day))
+
+# join weather data and unemployment data
+weather_unemp <- left_join(weather, unemp, by = "date_y_m")
+
+# remove year-month column
+weather_unemp <- weather_unemp %>% select(-date_y_m)
+
+## Wrangle Tweets -- Separate tweets into individual words 
+#######################################################################
+
+# create list of words to identify sales
+sale_words = c("off", "sale")
+
+# EXPRESS
+# get tweets
+express_tweets <- read_csv("expresstweets.csv")
+
+# create outcome column for sales at EXPRESS
+express_outcome <- express_tweets %>%
+  unnest_tokens(word, expresstext) %>%
+  group_by(word) %>%
+  mutate (sale = ifelse(word %in% sale_words, 1, 0)) %>%
+  filter(sale == 1)
+
+# join with weather, stock, unemployment, data
+express <- left_join(weather_unemp, express_outcome, by = "date")
+express <- full_join(express, exp_stocks, by = "date")
+
+# create 0 in outcome column for sales
+express <- express %>% 
+  mutate(sale = ifelse(is.na(sale),0,sale)) %>%
+  select(-word) %>%
+  unique()
+
+###
+
+# GAP
+# get tweets
+gap_tweets <- read_csv("gaptweets.csv")
+
+# create outcome column for sales at GAP
+gap_outcome <- gap_tweets %>%
+  unnest_tokens(word, gaptext) %>%
+  group_by(word) %>%
+  mutate (sale = ifelse(word %in% sale_words, 1, 0)) %>%
+  filter(sale == 1)
+
+# join with weather, stock, unemployment, data
+gap <- left_join(weather_unemp, gap_outcome, by = "date")
+gap <- full_join(gap, gap_stocks, by = "date")
+
+# create 0 in outcome column for sales
+gap <- gap %>% 
+  mutate(sale = ifelse(is.na(sale),0,sale)) %>%
+  select(-word) %>%
+  unique()
+
+###
+
+# JCREW
+# get tweets
+jcrew_tweets <- read_csv("jcrewtweets.csv")
+
+# create outcome column for sales at JCREW
+jcrew_outcome <- jcrew_tweets %>%
+  unnest_tokens(word, jcrewtext) %>%
+  group_by(word) %>%
+  mutate (sale = ifelse(word %in% sale_words, 1, 0)) %>%
+  filter(sale == 1)
+
+# join with weather, stock, unemployment, data
+jcrew <- left_join(weather_unemp, jcrew_outcome, by = "date")
+
+# create 0 in outcome column for sales
+jcrew <- jcrew %>% 
+  mutate(sale = ifelse(is.na(sale),0,sale)) %>%
+  select(-word) %>%
+  unique()
+
+###
+
+# LOFT
+# get tweets
+loft_tweets <- read_csv("lofttweets.csv")
+
+# create outcome column for sales at LOFT
+loft_outcome <- loft_tweets %>%
+  unnest_tokens(word, lofttext) %>%
+  group_by(word) %>%
+  mutate (sale = ifelse(word %in% sale_words, 1, 0)) %>%
+  filter(sale == 1)
+
+# join with weather, stock, unemployment, data
+loft <- left_join(weather_unemp, loft_outcome, by = "date")
+loft <- full_join(loft, loft_stocks, by = "date")
+
+# create 0 in outcome column for sales
+loft <- loft %>% 
+  mutate(sale = ifelse(is.na(sale),0,sale)) %>%
+  select(-word) %>%
+  unique() 
+
+## Create a joined file for visualization
+#######################################################################
+
+# EXPRESS
+# filter express for only sale dates
+express_vis <- express_outcome %>%
+  rename(expresssale = sale)
+
+express_vis <- within(express_vis, rm(word))
+
+# GAP
+# filter gap for only sale dates
+gap_vis <- gap_outcome %>%
+  rename(gapsale = sale)
+
+gap_vis <- within(gap_vis, rm(word))
+
+# JCREW
+# filter jcrew for only sale dates
+jcrew_vis <- jcrew_outcome %>%
+  rename(jcrewsale = sale)
+
+jcrew_vis <- within(jcrew_vis, rm(word))
+
+#LOFT
+# filter loft for only sale dates
+loft_vis <- loft_outcome %>% 
+  rename(loftsale = sale)
+
+loft_vis <- within(loft_vis, rm(word))
+
+# join filtered data sets together -- only word & outcome columns
+joined <- full_join(express_vis, gap_vis, by = "date")
+joined <- full_join(joined, jcrew_vis, by = "date")
+joined <- full_join(joined, loft_vis, by = "date")
+
+# join with weather & unemployment
+joined <- left_join(weather_unemp, joined, by = "date")
+
+# join with stocks
+joined <- full_join(joined, exp_stocks, by = "date")
+joined <- full_join(joined, loft_stocks, by = "date")
+joined <- full_join(joined, gap_stocks, by = "date")
+
+# replace NAs with 0s
+joined <- joined %>% 
+  mutate(expresssale = ifelse(is.na(expresssale),0,expresssale)) %>%
+  mutate(gapsale = ifelse(is.na(gapsale),0,gapsale)) %>%
+  mutate(jcrewsale = ifelse(is.na(jcrewsale),0,jcrewsale)) %>%
+  mutate(loftsale = ifelse(is.na(loftsale),0,loftsale))
+
+# save joined dataset for visualizations as a .csv
+write.csv(joined, file = "joined_for_visualization.csv", row.names=FALSE)
 ```
 
 2. EDA and visualizations
 ```{r}
 
 ```
+
+
+
+
+
+
+
+
+
 
 3. Split data into training and test sets 80:20
 
@@ -38,160 +309,180 @@ Use the following methods to build a model predicting sales on the training set:
   
 EXPRESS
 ```{r}
+#filter for date of furthest tweet back
+express <- express %>% filter(date >= "2014-07-10")
+
 #split data
-inTrain <- createDataPartition(y = dat_express$y, p=0.8)$Resample
+inTrain <- createDataPartition(y = express$sale, p=0.8)$Resample
 
 #define train and test set
-train_set_express <- slice(dat_express, inTrain) 
-test_set_express <- slice(dat_express, -inTrain) 
+train_set_express <- slice(express, inTrain) 
+test_set_express <- slice(express, -inTrain) 
 
 #fit OLS regression to train set
-express_ols <- train_set %>% lm(express_sale ~ precipitationNY + precipitationLA + precipitationH + precipitationCHI+ snowNY + snowLA + snowH + snowCHI + tempNY + tempLA + tempH + tempCHI + express_stock + unemployment + holiday + time_since_last_express, data=.)
-
+express_ols <- train_set_express %>% lm(sale ~ ny_snow + ny_mean_temp + ny_precip + la_snow + la_mean_temp +la_precip + chi_snow + chi_mean_temp + chi_precip + hou_snow + hou_mean_temp + hou_precip + unemployment + expr_adj_close, data = .)
+                                          
 #fit glm logistic regression to train set
-express_glm <- train_set %>% glm(express_sale ~ precipitationNY + precipitationLA + precipitationH + precipitationCHI+ snowNY + snowLA + snowH + snowCHI + tempNY + tempLA + tempH + tempCHI + express_stock + unemployment + holiday + time_since_last_express, data=. , family = "binomial")
+express_glm <- train_set_express %>% glm(sale ~ ny_snow + ny_mean_temp + ny_precip + la_snow + la_mean_temp +la_precip + chi_snow + chi_mean_temp + chi_precip + hou_snow + hou_mean_temp + hou_precip + unemployment + expr_adj_close, data=. , family = "binomial")
 
 #try ols on test set to check accuracy
-test_set <- mutate(test_set, fhat_express_ols = predict(express_ols, newdata = test_set, type = "response")) %>%
-  mutate(pred_express_ols=round(fhat_express_ols)) %>% mutate(accuracy_express_ols = (ifelse(pred_express_ols == y, 1, 0))) 
+test_set_express <- mutate(test_set_express, fhat_express_ols = predict(express_ols, newdata = test_set_express, type = "response")) %>%
+  mutate(pred_express_ols=round(fhat_express_ols)) %>% mutate(accuracy_express_ols = (ifelse(pred_express_ols == sale, 1, 0))) 
 
-table(test_set$accuracy_express_ols)
+table(test_set_express$accuracy_express_ols)
 
 #try glm on test set to check accuracy
-test_set <- mutate(test_set, fhat_express_glm = predict(express_glm, newdata = test_set, type = "response")) %>%
-  mutate(pred_express_glm=round(fhat_express_glm)) %>% mutate(accuracy_express_glm = (ifelse(pred_express_glm == y, 1, 0))) 
+test_set_express <- mutate(test_set_express, fhat_express_glm = predict(express_glm, newdata = test_set_express, type = "response")) %>%
+  mutate(pred_express_glm=round(fhat_express_glm)) %>% mutate(accuracy_express_glm = (ifelse(pred_express_glm == sale, 1, 0))) 
 
-table(test_set$accuracy_glm)
+table(test_set_express$accuracy_express_glm)
 
 #confusion matrix ols
-tab <- table(test_set$pred_express_ols, test_set$express_sale)
-conf_matrix <- confusionMatrix(tab)
-conf_matrix$table
-conf_matrix$overall["Accuracy"]
+tab <- table(test_set_express$pred_express_ols, test_set_express$sale)
+cm_express_ols <- confusionMatrix(tab)
+cm_express_ols$table
+cm_express_ols$overall["Accuracy"]
 
 #confusion matrix glm
-tab <- table(test_set$pred_express_glm, test_set$express_sale)
-conf_matrix <- confusionMatrix(tab)
-conf_matrix$table
-conf_matrix$overall["Accuracy"]
+tab <- table(test_set_express$pred_express_glm, test_set_express$sale)
+cm_express_glm <- confusionMatrix(tab)
+cm_express_glm $table
+cm_express_glm $overall["Accuracy"]
 ```
+OLS: 80.3% accuracy
+GLM: 80.3% accuracy???? Why is it the same? Check on this!
 
 GAP
 ```{r}
+#filter for date of furthest tweet back
+gap <- gap %>% filter(date >= "2015-02-12")
+
 #split data
-inTrain <- createDataPartition(y = dat_gap$y, p=0.8)$Resample
+inTrain <- createDataPartition(y = gap$sale, p=0.8)$Resample
 
 #define train and test set
-train_set_gap <- slice(dat_gap, inTrain) 
-test_set_gap <- slice(dat_gap, -inTrain) 
+train_set_gap <- slice(gap, inTrain) 
+test_set_gap <- slice(gap, -inTrain) 
 
 #fit OLS regression to train set
-gap_ols <- train_set %>% lm(gap_sale ~ precipitationNY + precipitationLA + precipitationH + precipitationCHI+ snowNY + snowLA + snowH + snowCHI + tempNY + tempLA + tempH + tempCHI + gap_stock + unemployment + holiday + time_since_last_gap, data=.)
+gap_ols <- train_set_gap %>% lm(sale ~ ny_snow + ny_mean_temp + ny_precip + la_snow + la_mean_temp +la_precip + chi_snow + chi_mean_temp + chi_precip + hou_snow + hou_mean_temp + hou_precip + unemployment + gap_adj_close, data=.)
 
 #fit glm logistic regression to train set
-gap_glm <- train_set %>% glm(gap_sale ~ precipitationNY + precipitationLA + precipitationH + precipitationCHI+ snowNY + snowLA + snowH + snowCHI + tempNY + tempLA + tempH + tempCHI + gap_stock + unemployment + holiday + time_since_last_gap, data=. , family = "binomial")
+gap_glm <- train_set_gap %>% glm(sale ~ ny_snow + ny_mean_temp + ny_precip + la_snow + la_mean_temp +la_precip + chi_snow + chi_mean_temp + chi_precip + hou_snow + hou_mean_temp + hou_precip + unemployment + gap_adj_close, data=. , family = "binomial")
 
 #try ols on test set to check accuracy
-test_set <- mutate(test_set, fhat_gap_ols = predict(gap_ols, newdata = test_set, type = "response")) %>%
-  mutate(pred_gap_ols=round(fhat_gap_ols)) %>% mutate(accuracy_gap_ols = (ifelse(pred_gap_ols == y, 1, 0))) 
+test_set_gap <- mutate(test_set_gap, fhat_gap_ols = predict(gap_ols, newdata = test_set_gap, type = "response")) %>%
+  mutate(pred_gap_ols=round(fhat_gap_ols)) %>% mutate(accuracy_gap_ols = (ifelse(pred_gap_ols == sale, 1, 0))) 
 
-table(test_set$accuracy_gap_ols)
+table(test_set_gap$accuracy_gap_ols)
 
 #try glm on test set to check accuracy
-test_set <- mutate(test_set, fhat_gap_glm = predict(gap_glm, newdata = test_set, type = "response")) %>%
-  mutate(pred_gap_glm=round(fhat_gap_glm)) %>% mutate(accuracy_gap_glm = (ifelse(pred_gap_glm == y, 1, 0))) 
+test_set_gap <- mutate(test_set_gap, fhat_gap_glm = predict(gap_glm, newdata = test_set_gap, type = "response")) %>%
+  mutate(pred_gap_glm=round(fhat_gap_glm)) %>% mutate(accuracy_gap_glm = (ifelse(pred_gap_glm == sale, 1, 0))) 
 
-table(test_set$accuracy_glm)
+table(test_set_gap$accuracy_gap_glm)
 
 #confusion matrix ols
-tab <- table(test_set$pred_gap_ols, test_set$gap_sale)
-conf_matrix <- confusionMatrix(tab)
-conf_matrix$table
-conf_matrix$overall["Accuracy"]
+tab <- table(test_set_gap$pred_gap_ols, test_set_gap$sale)
+cm_gap_ols <- confusionMatrix(tab)
+cm_gap_ols $table
+cm_gap_ols $overall["Accuracy"]
 
 #confusion matrix glm
-tab <- table(test_set$pred_gap_glm, test_set$gap_sale)
-conf_matrix <- confusionMatrix(tab)
-conf_matrix$table
-conf_matrix$overall["Accuracy"]
+tab <- table(test_set_gap$pred_gap_glm, test_set_gap$sale)
+cm_gap_glm <- confusionMatrix(tab)
+cm_gap_glm$table
+cm_gap_glm$overall["Accuracy"]
 ```
+Accuracy
+ols: 
+glm: 94.6%
+
 
 LOFT
 ```{r}
+loft <- loft %>% filter(date >= "2013-03-01")
+
 #split data
-inTrain <- createDataPartition(y = dat_loft$y, p=0.8)$Resample
+inTrain <- createDataPartition(y = loft$sale, p=0.7)$Resample
 
 #define train and test set
-train_set_loft <- slice(dat_loft, inTrain) 
-test_set_loft <- slice(dat_loft, -inTrain) 
+train_set_loft <- slice(loft, inTrain) 
+test_set_loft <- slice(loft, -inTrain) 
 
 #fit OLS regression to train set
-loft_ols <- train_set %>% lm(loft_sale ~ precipitationNY + precipitationLA + precipitationH + precipitationCHI+ snowNY + snowLA + snowH + snowCHI + tempNY + tempLA + tempH + tempCHI + loft_stock + unemployment + holiday + time_since_last_loft, data=.)
+loft_ols <- train_set_loft %>% lm(sale ~ ny_snow + ny_mean_temp + ny_precip + la_snow + la_mean_temp +la_precip + chi_snow + chi_mean_temp + chi_precip + hou_snow + hou_mean_temp + hou_precip + unemployment + loft_adj_close, data=.)
 
 #fit glm logistic regression to train set
-loft_glm <- train_set %>% glm(loft_sale ~ precipitationNY + precipitationLA + precipitationH + precipitationCHI+ snowNY + snowLA + snowH + snowCHI + tempNY + tempLA + tempH + tempCHI + loft_stock + unemployment + holiday + time_since_last_loft, data=. , family = "binomial")
+loft_glm <- train_set_loft %>% glm(sale ~ ny_snow + ny_mean_temp + ny_precip + la_snow + la_mean_temp +la_precip + chi_snow + chi_mean_temp + chi_precip + hou_snow + hou_mean_temp + hou_precip + unemployment + loft_adj_close, data=. , family = "binomial")
 
 #try ols on test set to check accuracy
-test_set <- mutate(test_set, fhat_loft_ols = predict(loft_ols, newdata = test_set, type = "response")) %>%
-  mutate(pred_loft_ols=round(fhat_loft_ols)) %>% mutate(accuracy_loft_ols = (ifelse(pred_loft_ols == y, 1, 0))) 
+test_set_loft <- mutate(test_set_loft, fhat_loft_ols = predict(loft_ols, newdata = test_set_loft, type = "response")) %>%
+  mutate(pred_loft_ols=round(fhat_loft_ols)) %>% mutate(accuracy_loft_ols = (ifelse(pred_loft_ols == sale, 1, 0))) 
 
-table(test_set$accuracy_loft_ols)
+table(test_set_loft$accuracy_loft_ols)
 
 #try glm on test set to check accuracy
-test_set <- mutate(test_set, fhat_loft_glm = predict(loft_glm, newdata = test_set, type = "response")) %>%
-  mutate(pred_loft_glm=round(fhat_loft_glm)) %>% mutate(accuracy_loft_glm = (ifelse(pred_loft_glm == y, 1, 0))) 
+test_set_loft <- mutate(test_set_loft, fhat_loft_glm = predict(loft_glm, newdata = test_set_loft, type = "response")) %>%
+  mutate(pred_loft_glm=round(fhat_loft_glm)) %>% mutate(accuracy_loft_glm = (ifelse(pred_loft_glm == sale, 1, 0))) 
 
-table(test_set$accuracy_glm)
+table(test_set_loft$accuracy_loft_glm)
 
 #confusion matrix ols
-tab <- table(test_set$pred_loft_ols, test_set$loft_sale)
-conf_matrix <- confusionMatrix(tab)
-conf_matrix$table
-conf_matrix$overall["Accuracy"]
+tab <- table(test_set_loft$pred_loft_ols, test_set_loft$sale)
+cm_loft_ols <- confusionMatrix(tab)
+cm_loft_ols $table
+cm_loft_ols $overall["Accuracy"]
 
 #confusion matrix glm
-tab <- table(test_set$pred_loft_glm, test_set$loft_sale)
-conf_matrix <- confusionMatrix(tab)
-conf_matrix$table
-conf_matrix$overall["Accuracy"]
+tab <- table(test_set_loft$pred_loft_glm, test_set_loft$sale)
+cm_loft_glm <- confusionMatrix(tab)
+cm_loft_glm$table
+cm_loft_glm$overall["Accuracy"]
 ```
+Accuracy:
+OLS: 
+GLM: 85.4%
+
 
 JCREW
 ```{r}
+jcrew <- jcrew %>% filter(date >= "2013-09-25")
+
 #split data
-inTrain <- createDataPartition(y = dat_jcrew$y, p=0.8)$Resample
+inTrain <- createDataPartition(y = jcrew$sale, p=0.7)$Resample
 
 #define train and test set
-train_set_jcrew <- slice(dat_jcrew, inTrain) 
-test_set_jcrew <- slice(dat_jcrew, -inTrain) 
+train_set_jcrew <- slice(jcrew, inTrain) 
+test_set_jcrew <- slice(jcrew, -inTrain) 
 
 #fit OLS regression to train set
-jcrew_ols <- train_set %>% lm(jcrew_sale ~ precipitationNY + precipitationLA + precipitationH + precipitationCHI+ snowNY + snowLA + snowH + snowCHI + tempNY + tempLA + tempH + tempCHI + jcrew_stock + unemployment + holiday + time_since_last_jcrew, data=.)
+jcrew_ols <- train_set_jcrew %>% lm(sale ~ ny_snow + ny_mean_temp + ny_precip + la_snow + la_mean_temp +la_precip + chi_snow + chi_mean_temp + chi_precip + hou_snow + hou_mean_temp + hou_precip + unemployment, data=.)
 
 #fit glm logistic regression to train set
-jcrew_glm <- train_set %>% glm(jcrew_sale ~ precipitationNY + precipitationLA + precipitationH + precipitationCHI+ snowNY + snowLA + snowH + snowCHI + tempNY + tempLA + tempH + tempCHI + jcrew_stock + unemployment + holiday + time_since_last_jcrew, data=. , family = "binomial")
+jcrew_glm <- train_set_jcrew %>% glm(sale ~ ny_snow + ny_mean_temp + ny_precip + la_snow + la_mean_temp +la_precip + chi_snow + chi_mean_temp + chi_precip + hou_snow + hou_mean_temp + hou_precip + unemployment, data=. , family = "binomial")
 
 #try ols on test set to check accuracy
-test_set <- mutate(test_set, fhat_jcrew_ols = predict(jcrew_ols, newdata = test_set, type = "response")) %>%
-  mutate(pred_jcrew_ols=round(fhat_jcrew_ols)) %>% mutate(accuracy_jcrew_ols = (ifelse(pred_jcrew_ols == y, 1, 0))) 
+test_set_jcrew <- mutate(test_set_jcrew, fhat_jcrew_ols = predict(jcrew_ols, newdata = test_set_jcrew, type = "response")) %>%
+  mutate(pred_jcrew_ols=round(fhat_jcrew_ols)) %>% mutate(accuracy_jcrew_ols = (ifelse(pred_jcrew_ols == sale, 1, 0))) 
 
-table(test_set$accuracy_jcrew_ols)
+table(test_set_jcrew$accuracy_jcrew_ols)
 
 #try glm on test set to check accuracy
-test_set <- mutate(test_set, fhat_jcrew_glm = predict(jcrew_glm, newdata = test_set, type = "response")) %>%
-  mutate(pred_jcrew_glm=round(fhat_jcrew_glm)) %>% mutate(accuracy_jcrew_glm = (ifelse(pred_jcrew_glm == y, 1, 0))) 
+test_set_jcrew <- mutate(test_set_jcrew, fhat_jcrew_glm = predict(jcrew_glm, newdata = test_set_jcrew, type = "response")) %>%
+  mutate(pred_jcrew_glm=round(fhat_jcrew_glm)) %>% mutate(accuracy_jcrew_glm = (ifelse(pred_jcrew_glm == sale, 1, 0))) 
 
-table(test_set$accuracy_glm)
+table(test_set_jcrew$accuracy_jcrew_glm)
 
 #confusion matrix ols
-tab <- table(test_set$pred_jcrew_ols, test_set$jcrew_sale)
-conf_matrix <- confusionMatrix(tab)
-conf_matrix$table
-conf_matrix$overall["Accuracy"]
+tab <- table(test_set_jcrew$pred_jcrew_ols, test_set_jcrew$sale)
+cm_jcrew_ols <- confusionMatrix(tab)
+cm_jcrew_ols $table
+cm_jcrew_ols $overall["Accuracy"]
 
 #confusion matrix glm
-tab <- table(test_set$pred_jcrew_glm, test_set$jcrew_sale)
-conf_matrix <- confusionMatrix(tab)
-conf_matrix$table
-conf_matrix$overall["Accuracy"]
+tab <- table(test_set_jcrew$pred_jcrew_glm, test_set_jcrew$sale)
+cm_jcrew_glm <- confusionMatrix(tab)
+cm_jcrew_glm$table
+cm_jcrew_glm$overall["Accuracy"]
 ```
