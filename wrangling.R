@@ -10,9 +10,9 @@ library(gridExtra)
 library(ggrepel)
 library(lubridate)
 library(rwunderground)
+library(tidytext)
 
 setwd("~/Documents/HSPH/DataScience/sales-predict-")
-
 
 ## Weather Wrangling
 #######################################################################
@@ -156,4 +156,53 @@ loft <- full_join(loft_tweets, loft, by = "date")
 
 write.csv(loft, file = "loft_joined.csv", row.names=FALSE)
 
+
+## Wrangle Tweets -- Separate tweets into individual words
+#######################################################################
+
+# create list of words to identify sales
+sale_words = c("off", "sale")
+
+# create outcome column for sales at EXPRESS
+express <- express %>%
+  unnest_tokens(word, expresstext) %>%
+  group_by(word) %>%
+  mutate (sale = ifelse(word %in% sale_words, 1, 0))
+
+# create outcome column for sales at GAP
+gap <- gap %>%
+  unnest_tokens(word, gaptext) %>%
+  group_by(word) %>%
+  mutate (sale = ifelse(word %in% sale_words, 1, 0))
+
+# create outcome column for sales at JCREW
+jcrew <- jcrew %>%
+  unnest_tokens(word, jcrewtext) %>%
+  group_by(word) %>%
+  mutate (sale = ifelse(word %in% sale_words, 1, 0))
+
+# create outcome column for sales at LOFT
+loft <- loft %>%
+  unnest_tokens(word, lofttext) %>%
+  group_by(word) %>%
+  mutate (sale = ifelse(word %in% sale_words, 1, 0))
+
+## Create a joined file for visualization
+#######################################################################
+
+# filter express for only sale dates
+express_filtered <- express %>% filter(sale == 1)
+
+# filter gap for only sale dates
+gap_filtered <- gap %>% filter(sale == 1)
+
+# filter jcrew for only sale dates
+jcrew_filtered <- jcrew %>% filter(sale == 1)
+
+# filter loft for only sale dates
+loft_filtered <- loft %>% filter(sale == 1)
+
+joined <- full_join(express_filtered, gap_filtered, by = "date")
+joined <- full_join(joined, jcrew_filtered, by = "date")
+joined <- full_join(joined, loft_filtered, by = "date")
 
