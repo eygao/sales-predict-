@@ -143,7 +143,13 @@ holidays <- c(
   USMLKingsBirthday(2012:2016),
   USPresidentsDay(2012:2016),
   USThanksgivingDay(2012:2016),
-  USVeteransDay(2012:2016)
+  (USThanksgivingDay(2012) + 1),
+  (USThanksgivingDay(2013) + 1),
+  (USThanksgivingDay(2014) + 1),
+  (USThanksgivingDay(2015) + 1),
+  (USThanksgivingDay(2016) + 1),
+  USVeteransDay(2012:2016),
+  BoxingDay(2012:2016)
 )
 
 # convert holiday vector into data frame & create indicator column
