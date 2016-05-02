@@ -11,6 +11,7 @@ library(ggrepel)
 library(lubridate)
 library(rwunderground)
 library(tidytext)
+library(timeDate)
 
 setwd("~/Documents/HSPH/DataScience/sales-predict-")
 
@@ -23,7 +24,7 @@ los_angeles <- read_csv("weather_LA_2013-2016.csv")
 chicago <- read_csv("weather_Chicago_2013-2016.csv")
 houston <- read_csv("weather_Houston_2013-2016.csv")
 
-# keep date, snow, mean_temp, max_temp, min_temp, rename columns
+# keep date, snow, mean_temp, precipitation columns, rename columns
 new_york <- new_york %>% select(date, snow, mean_temp, precip) %>%
   rename (ny_snow = snow, ny_mean_temp = mean_temp, 
           ny_precip = precip)
@@ -40,7 +41,7 @@ houston <- houston %>% select(date, snow, mean_temp, precip) %>%
   rename (hou_snow = snow, hou_mean_temp = mean_temp, 
           hou_precip = precip)
 
-# join 4 cities together
+# join weather data from 4 cities together
 ny_la <- full_join(new_york, los_angeles, by = "date")
 ny_la_chi <- full_join(ny_la, chicago, by = "date")
 weather <- full_join(ny_la_chi, houston, by = "date")
@@ -106,7 +107,7 @@ unemp$date_month = paste(unemp$Year, unemp$month, sep="-")
 unemp <- unemp %>% rename(date_y_m = date_month) %>% select(date_y_m, unemployment) %>%
   mutate(date_y_m = as.character(date_y_m))
 
-## Join Unemployment Data + Stock Data + Weather
+## Join Unemployment Data + Weather + Holidays
 #######################################################################
 
 # remove time from weather date column
@@ -124,6 +125,40 @@ weather_unemp <- left_join(weather, unemp, by = "date_y_m")
 
 # remove year-month column
 weather_unemp <- weather_unemp %>% select(-date_y_m)
+
+# add in holiday data
+
+# create vector of US holidays from 2013 - 2016
+holidays <- c(
+  USChristmasDay(2012:2016),
+  ChristmasEve(2012:2016),
+  Easter(2012:2016),
+  USGoodFriday(2012:2016),
+  USLaborDay(2012:2016),
+  USNewYearsDay(2012:2016),
+  USColumbusDay(2012:2016),
+  USMemorialDay(2012:2016),
+  USElectionDay(2012:2016),
+  USIndependenceDay(2012:2016),
+  USMLKingsBirthday(2012:2016),
+  USPresidentsDay(2012:2016),
+  USThanksgivingDay(2012:2016),
+  USVeteransDay(2012:2016)
+)
+
+# convert holiday vector into data frame & create indicator column
+holidays <- as.data.frame(holidays) %>% mutate(holiday = 1)
+
+# rename first column as date
+colnames(holidays)[1] <- "date"
+
+# convert date column into date format
+holidays[1] <- as.Date(holidays$date)
+
+weather_unemp <- left_join(weather_unemp, holidays, by = "date")
+
+weather_unemp <- weather_unemp %>% mutate(holiday = ifelse(is.na(holiday),0,holiday))
+
 
 ## Wrangle Tweets -- Separate tweets into individual words 
 #######################################################################
@@ -274,5 +309,3 @@ joined <- joined %>%
 
 # save joined dataset for visualizations as a .csv
 write.csv(joined, file = "joined_for_visualization.csv", row.names=FALSE)
-
-
