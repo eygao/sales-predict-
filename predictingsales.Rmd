@@ -19,6 +19,7 @@ library(lubridate)
 library(rwunderground)
 library(tidytext)
 library(caret)
+library(timeDate)
 ```
 
 1. Load and wrangle the data 
