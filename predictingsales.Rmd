@@ -3,7 +3,7 @@ title: "Predicting sales"
 output: html_document
 ---
 #Team Members
-Rachel Brigel, Emily Gao, Nina Punukollu
+Rachel Brigell, Emily Gao, Nina Punukollu
 
 #Research question
 Do factors associated with conventional wisdom about retail sales help to predict retail sales?
@@ -29,6 +29,7 @@ library(tidytext)
 library(caret)
 library(timeDate)
 library(data.table)
+require(data.table)
 ```
 
 #1. Load and wrangle the data 
@@ -45,7 +46,6 @@ Stock prices: We obtained daily stock prices for the stores that are publically 
 Holidays: We obtained US Holiday data from the R timeDate package. 
 
 ```{r}
-setwd('/Users/emilygao/Dropbox (Personal)/Spring 2015/Data Science/sales-predict-')
 
 ## Weather Wrangling - Creates One File for Weather
 #######################################################################
@@ -225,6 +225,10 @@ express <- express %>%
   select(-word) %>%
   unique()
 
+# create time from last sale variable
+express_hist <- express %>% filter(date > "2014-07-10")
+setDT(express_hist)[,tte := seq.int(0,.N-1L), by = cumsum(sale)-sale]
+
 ###
 
 # GAP
@@ -248,6 +252,10 @@ gap <- gap %>%
   select(-word) %>%
   unique()
 
+# create time from last sale variable
+gap_hist <- gap %>% filter(date > "2015-02-12")
+setDT(gap_hist)[,tte := seq.int(0,.N-1L), by = cumsum(sale)-sale]
+
 ###
 
 # JCREW
@@ -269,6 +277,10 @@ jcrew <- jcrew %>%
   mutate(sale = ifelse(is.na(sale),0,sale)) %>%
   select(-word) %>%
   unique()
+
+# create time from last sale variable
+jcrew_hist <- jcrew %>% filter(date > "2013-09-25")
+setDT(jcrew_hist)[,tte := seq.int(0,.N-1L), by = cumsum(sale)-sale]
 
 ###
 
@@ -292,6 +304,11 @@ loft <- loft %>%
   mutate(sale = ifelse(is.na(sale),0,sale)) %>%
   select(-word) %>%
   unique()
+
+# create time from last sale variable
+loft_hist <- loft %>% filter(date > "2014-04-20")
+setDT(loft_hist)[,tte := seq.int(0,.N-1L), by = cumsum(sale)-sale]
+
 
 
 ## Create a joined file for visualization
@@ -347,6 +364,18 @@ joined <- joined %>%
 
 # save joined dataset for visualizations as a .csv
 write.csv(joined, file = "joined_for_visualization.csv", row.names=FALSE)
+
+# remove unneeded weather columns
+vis <- joined %>% select(-c(ny_snow, ny_precip, la_snow, la_precip, 
+            hou_snow, hou_precip, chi_snow, chi_precip))
+
+# create a mean temperature per day column
+vis$mean_temp <- rowMeans(subset(vis, select = c(ny_mean_temp, la_mean_temp, 
+                                                 hou_mean_temp, chi_mean_temp)), na.rm = TRUE)
+
+# create a total sales per day column
+vis$sum_sales <- rowSums(subset(vis, select = c(expresssale, gapsale, 
+                                        loftsale, jcrewsale)), na.rm = TRUE)
 ```
 
 #2.Visualizations
@@ -356,6 +385,8 @@ dat<-read_csv("joined_for_visualization.csv")
 ```
 
 #Plot: Sales over time
+The plot for sales over time shows that Express and Loft have more sales per month compared to Gap and JCrew. In addition to having more sales, Express and Loft have greater variation in the number of sales per month. 
+
 ```{r}
 #Filter data for the correct date range
 dat<-dat%>%filter(date>="2015-01-01")
@@ -382,15 +413,85 @@ p2<-ggplot(dat3,
 p2+geom_point()+xlab("Month")+ylab("Number of Sales")+ggtitle("Sales by store in 2015")
 ```
 
+#Plot: Sales by Temperature & Holiday Over Time
 
+As shown in the below plot, there is no clear relationship between sales, average temperature, and holidays over time. 
 
+```{r}
+# visualize weather over time, size = # sales, color = holiday
+vis %>% filter(date > "2015-09-25") %>% ggplot(aes(date)) + 
+geom_point(aes(y = mean_temp, size = factor(sum_sales), color = factor(holiday))) + 
+  geom_line(aes(y = mean_temp))  +
+  xlab("Date (By Day)") + ylab("Mean US Temperature") +
+  ggtitle("Sales by Temperature & Holiday Over Time")
 
+```
 
+#Plot: Sales by Stock Price Over Time
+As shown in the below plots, across stores, there is no clear relationship between stock price and sales over time. 
+```{r}
+# VISUALIZATION with STOCKS
+# visualize stock price over time, color denotes sale day
+# LOFT
+vis %>% filter(date > "2015-04-20") %>%
+  ggplot(aes(date)) + 
+  geom_point(aes(y = loft_adj_close, color = factor(loftsale))) +
+  geom_line(aes(y = loft_adj_close)) +
+  xlab("Date (By Day)") + ylab("Loft Stock Price (ASNA)") +
+  ggtitle("Loft Sales by Stock Price Over Time")
 
+# EXPRESS
+vis %>% filter(date > "2015-04-20") %>%
+  ggplot(aes(date)) + 
+  geom_point(aes(y = expr_adj_close, color = factor(expresssale))) +
+  geom_line(aes(y = expr_adj_close)) +
+  xlab("Date (By Day)") + ylab("Express Stock Price (EXPR)") +
+  ggtitle("Express Sales by Stock Price Over Time")
 
+# GAP
+vis %>% filter(date > "2015-04-20") %>%
+  ggplot(aes(date)) + 
+  geom_point(aes(y = gap_adj_close, color = factor(gapsale))) +
+  geom_line(aes(y = gap_adj_close)) +
+  xlab("Date (By Day)") + ylab("GAP Stock Price (GPS)") +
+  ggtitle("Gap Sales by Stock Price Over Time")
 
+```
 
+#Plot: Histograms for Time From Last Sale
+The histograms below show the frequency of sales across stores. Among the four stores, Express has sales most frequently, while JCrew has sales least frequently.
 
+```{r}
+
+# LOFT
+# visualize time from last sale
+hist(loft_hist$tte, 
+     main="Histogram for Time From Last Loft Sale", 
+     xlab="Time Since Last Sale", 
+     col="light blue")
+
+# GAP
+# visualize time from last sale
+hist(gap_hist$tte, 
+     main="Histogram for Time From Last Gap Sale", 
+     xlab="Time Since Last Sale", 
+     col="blue")
+
+# JCREW
+# visualize time from last sale
+hist(jcrew_hist$tte, 
+     main="Histogram for Time From Last JCrew Sale", 
+     xlab="Time Since Last Sale", 
+     col="purple")
+
+# EXPRESS
+# visualize time from last sale
+hist(express_hist$tte,
+          main="Histogram for Time From Last Express Sale", 
+          xlab="Time Since Last Sale", 
+          col="light green")
+
+```
 
 #3. Predictions
   
