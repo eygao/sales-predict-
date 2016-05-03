@@ -1,11 +1,9 @@
 ---
-title: "predicting sales"
+title: "Predicting sales"
 output: html_document
 ---
 #Team Members
-Emily Gao
-Rachel Brigell
-Nina Punukollu
+Rachel Brigel, Emily Gao, Nina Punukollu
 
 #Research question
 Do factors associated with conventional wisdom about retail sales help to predict retail sales?
@@ -13,7 +11,7 @@ Do factors associated with conventional wisdom about retail sales help to predic
 #Introduction
 As graduate students on tight budgets, we are constantly looking for the best deals on clothing. Clothing stores often have sales, but it’s hard to predict when those sales will take place. Conventional wisdom suggests that factors such as temperature, macroeconomic fluctuations, and holidays are reasonable predictors of retail sales. In this project, we gathered data on these types of factors and utilized basic modelling techniques and cross validation techniques to see if they were able to predict future retail sales. With the data and methods we used, we were unable to find associations between typical “conventional wisdom” factors and retail sales at four stores: Express, LOFT, Gap, and J Crew. 
 
-```{r}
+```{r, echo=FALSE}
 rm(list = ls())
 library(httr)
 library(plyr)
@@ -33,7 +31,7 @@ library(timeDate)
 library(data.table)
 ```
 
-#1. LOAD AND WRANGLE THE DATA 
+#1. Load and wrangle the data 
 
 #Data
 Sales: To obtain a proxy for sales that are occurring at these stores, we used the Twitter API to obtain data from their accounts and used keyword analysis to identify days where they had sales. We attempted to select stores that had comparable styles of clothing and types of consumers. We did not distinguish between online and in-store sales. 
@@ -351,7 +349,7 @@ joined <- joined %>%
 write.csv(joined, file = "joined_for_visualization.csv", row.names=FALSE)
 ```
 
-#2. EDA and VISUALIZATIONS
+#2.Visualizations
 #Read in data
 ```{r}
 dat<-read_csv("joined_for_visualization.csv")
@@ -394,7 +392,7 @@ p2+geom_point()+xlab("Month")+ylab("Number of Sales")+ggtitle("Sales by store in
 
 
 
-#3. PREDICTIONS
+#3. Predictions
   
 #EXPRESS
 ```{r}
