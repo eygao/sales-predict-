@@ -20,6 +20,7 @@ library(rwunderground)
 library(tidytext)
 library(caret)
 library(timeDate)
+library(data.table)
 ```
 
 1. Load and wrangle the data 
@@ -353,6 +354,11 @@ EXPRESS
 #filter for date of furthest tweet back
 express <- express %>% filter(date >= "2014-07-10")
 
+require(data.table)
+
+# create a time to event variable
+setDT(express)[,tte := seq.int(0,.N-1L), by = cumsum(sale)-sale]
+
 #split data
 inTrain <- createDataPartition(y = express$sale, p=0.8)$Resample
 
@@ -402,6 +408,11 @@ GAP
 ```{r}
 #filter for date of furthest tweet back
 gap <- gap %>% filter(date >= "2015-02-12")
+
+require(data.table)
+
+# create a time to event variable
+setDT(gap)[,tte := seq.int(0,.N-1L), by = cumsum(sale)-sale]
 
 #split data
 inTrain <- createDataPartition(y = gap$sale, p=0.8)$Resample
@@ -453,6 +464,11 @@ LOFT
 ```{r}
 loft <- loft %>% filter(date >= "2013-03-01")
 
+require(data.table)
+
+# create a time to event variable
+setDT(loft)[,tte := seq.int(0,.N-1L), by = cumsum(sale)-sale]
+
 #split data
 inTrain <- createDataPartition(y = loft$sale, p=0.7)$Resample
 
@@ -502,6 +518,9 @@ GLM: 84.9%
 JCREW
 ```{r}
 jcrew <- jcrew %>% filter(date >= "2013-09-25")
+
+# create a time to event variable
+setDT(jcrew)[,tte := seq.int(0,.N-1L), by = cumsum(sale)-sale]
 
 #split data
 inTrain <- createDataPartition(y = jcrew$sale, p=0.7)$Resample
