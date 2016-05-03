@@ -343,7 +343,7 @@ write.csv(joined, file = "joined_for_visualization.csv", row.names=FALSE)
 
 
 
-3. Split data into training and test sets 80:20
+3. Split data into training and test sets 70:30
 
 Use the following methods to build a model predicting sales on the training set:
   1. OLS
@@ -352,7 +352,7 @@ Use the following methods to build a model predicting sales on the training set:
 EXPRESS
 ```{r}
 #filter for date of furthest tweet back
-express <- express %>% filter(date >= "2014-07-10")
+express <- express %>% filter(date >= "2014-07-10" & date <= "2016-04-20")
 
 require(data.table)
 
@@ -360,7 +360,7 @@ require(data.table)
 setDT(express)[,tte := seq.int(0,.N-1L), by = cumsum(sale)-sale]
 
 #split data
-inTrain <- createDataPartition(y = express$sale, p=0.8)$Resample
+inTrain <- createDataPartition(y = express$sale, p=0.7)$Resample
 
 #define train and test set
 train_set_express <- slice(express, inTrain) 
@@ -391,7 +391,7 @@ table(test_set_express$sale)
 
 #confusion matrix ols
 tab <- table(pred = test_set_express$pred_express_ols, truth = test_set_express$sale)
-cm_express_ols <- confusionMatrix(tab)$tab
+cm_express_ols <- confusionMatrix(tab)
 cm_express_ols$table
 cm_express_ols$overall["Accuracy"]
 
@@ -401,13 +401,16 @@ cm_express_glm <- confusionMatrix(tab)
 cm_express_glm $table
 cm_express_glm $overall["Accuracy"]
 ```
+Accuracy:
+OLS: 71.7%
+GLM: 78.1%
 
-Both our OLS and our glm models always predict that there is less than a 50% chance of a sale. This means that we always accuratly predict when there is no sale, but it isn't meanful for predicting when sales will happen. 
+Rarely predicting "1" for both GLM and OLS
 
 GAP
 ```{r}
 #filter for date of furthest tweet back
-gap <- gap %>% filter(date >= "2015-02-12")
+gap <- gap %>% filter(date >= "2015-02-12" & date <= "2016-04-20")
 
 require(data.table)
 
@@ -415,7 +418,7 @@ require(data.table)
 setDT(gap)[,tte := seq.int(0,.N-1L), by = cumsum(sale)-sale]
 
 #split data
-inTrain <- createDataPartition(y = gap$sale, p=0.8)$Resample
+inTrain <- createDataPartition(y = gap$sale, p=0.7)$Resample
 
 #define train and test set
 train_set_gap <- slice(gap, inTrain) 
@@ -444,22 +447,22 @@ test_set_gap <- mutate(test_set_gap, fhat_gap_glm = predict(gap_glm, newdata = t
 table(test_set_gap$accuracy_gap_glm)
 
 #confusion matrix ols
-tab <- table(test_set_gap$pred_gap_ols, test_set_gap$sale)
-cm_gap_ols <- confusionMatrix(tab)
-cm_gap_ols $table
-cm_gap_ols $overall["Accuracy"]
+#tab <- table(test_set_gap$pred_gap_ols, test_set_gap$sale)
+#cm_gap_ols <- confusionMatrix(tab)
+#cm_gap_ols $table
+#cm_gap_ols $overall["Accuracy"]
 
 #confusion matrix glm
-tab <- table(test_set_gap$pred_gap_glm, test_set_gap$sale)
-cm_gap_glm <- confusionMatrix(tab)
-cm_gap_glm$table
-cm_gap_glm$overall["Accuracy"]
+#tab <- table(test_set_gap$pred_gap_glm, test_set_gap$sale)
+#cm_gap_glm <- confusionMatrix(tab)
+#cm_gap_glm$table
+#cm_gap_glm$overall["Accuracy"]
 ```
-
+Always predicting "0" for both OLS and GLM
 
 LOFT
 ```{r}
-loft <- loft %>% filter(date >= "2014-04-20")
+loft <- loft %>% filter(date >= "2014-04-20" & date <= "2016-04-20")
 
 require(data.table)
 
@@ -496,24 +499,22 @@ test_set_loft <- mutate(test_set_loft, fhat_loft_glm = predict(loft_glm, newdata
 table(test_set_loft$accuracy_loft_glm)
 
 #confusion matrix ols
-tab <- table(test_set_loft$pred_loft_ols, test_set_loft$sale)
-cm_loft_ols <- confusionMatrix(tab)
-cm_loft_ols $table
-cm_loft_ols $overall["Accuracy"]
+#tab <- table(test_set_loft$pred_loft_ols, test_set_loft$sale)
+#cm_loft_ols <- confusionMatrix(tab)
+#cm_loft_ols $table
+#cm_loft_ols $overall["Accuracy"]
 
 #confusion matrix glm
-tab <- table(test_set_loft$pred_loft_glm, test_set_loft$sale)
-cm_loft_glm <- confusionMatrix(tab)
-cm_loft_glm$table
-cm_loft_glm$overall["Accuracy"]
+#tab <- table(test_set_loft$pred_loft_glm, test_set_loft$sale)
+#cm_loft_glm <- confusionMatrix(tab)
+#cm_loft_glm$table
+#cm_loft_glm$overall["Accuracy"]
 ```
-Accuracy:
-
-
+Always predicting "0" for both OLS and GLM
 
 JCREW
 ```{r}
-jcrew <- jcrew %>% filter(date >= "2013-09-25")
+jcrew <- jcrew %>% filter(date >= "2013-09-25"& date <= "2016-04-20")
 
 # create a time to event variable
 setDT(jcrew)[,tte := seq.int(0,.N-1L), by = cumsum(sale)-sale]
@@ -548,17 +549,18 @@ test_set_jcrew <- mutate(test_set_jcrew, fhat_jcrew_glm = predict(jcrew_glm, new
 table(test_set_jcrew$accuracy_jcrew_glm)
 
 #confusion matrix ols
-tab <- table(test_set_jcrew$pred_jcrew_ols, test_set_jcrew$sale)
-cm_jcrew_ols <- confusionMatrix(tab)
-cm_jcrew_ols $table
-cm_jcrew_ols $overall["Accuracy"]
+#tab <- table(test_set_jcrew$pred_jcrew_ols, test_set_jcrew$sale)
+#cm_jcrew_ols <- confusionMatrix(tab)
+#cm_jcrew_ols $table
+#cm_jcrew_ols $overall["Accuracy"]
 
 #confusion matrix glm
-tab <- table(test_set_jcrew$pred_jcrew_glm, test_set_jcrew$sale)
-cm_jcrew_glm <- confusionMatrix(tab)
-cm_jcrew_glm$table
-cm_jcrew_glm$overall["Accuracy"]
+#tab <- table(test_set_jcrew$pred_jcrew_glm, test_set_jcrew$sale)
+#cm_jcrew_glm <- confusionMatrix(tab)
+#cm_jcrew_glm$table
+#cm_jcrew_glm$overall["Accuracy"]
 ```
+Always predicting "0" for both OLS and GLM
 
 #Read in data
 ```{r}
