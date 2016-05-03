@@ -459,7 +459,7 @@ cm_gap_glm$overall["Accuracy"]
 
 LOFT
 ```{r}
-loft <- loft %>% filter(date >= "2013-03-01")
+loft <- loft %>% filter(date >= "2014-04-20")
 
 require(data.table)
 
