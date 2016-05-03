@@ -367,12 +367,12 @@ train_set_express <- slice(express, inTrain)
 test_set_express <- slice(express, -inTrain) 
 
 #fit OLS regression to train set
-express_ols <- train_set_express %>% lm(sale ~ ny_precip + ny_mean_temp + la_precip + la_mean_temp +  chi_precip + chi_mean_temp + hou_precip + hou_mean_temp + unemployment + holiday + expr_adj_close, data = .)
+express_ols <- train_set_express %>% lm(sale ~ ny_precip + ny_mean_temp + la_precip + la_mean_temp +  chi_precip + chi_mean_temp + hou_precip + hou_mean_temp + unemployment + holiday + expr_adj_close + tte, data = .)
 
 summary(express_ols)
                                           
 #fit glm logistic regression to train set
-express_glm <- train_set_express %>% glm(sale ~ ny_precip + ny_mean_temp + la_precip + la_mean_temp +  chi_precip + chi_mean_temp + hou_precip + hou_mean_temp + unemployment + holiday + expr_adj_close, data=. , family = "binomial")
+express_glm <- train_set_express %>% glm(sale ~ ny_precip + ny_mean_temp + la_precip + la_mean_temp +  chi_precip + chi_mean_temp + hou_precip + hou_mean_temp + unemployment + holiday + expr_adj_close + tte, data=. , family = "binomial")
 
 summary(express_glm)
                          
@@ -422,12 +422,12 @@ train_set_gap <- slice(gap, inTrain)
 test_set_gap <- slice(gap, -inTrain) 
 
 #fit OLS regression to train set
-gap_ols <- train_set_gap %>% lm(sale ~ ny_precip + ny_mean_temp + la_precip + la_mean_temp +  chi_precip + chi_mean_temp + hou_precip + hou_mean_temp + unemployment + holiday +gap_adj_close, data=.)
+gap_ols <- train_set_gap %>% lm(sale ~ ny_precip + ny_mean_temp + la_precip + la_mean_temp +  chi_precip + chi_mean_temp + hou_precip + hou_mean_temp + unemployment + holiday +gap_adj_close +tte, data=.)
 
 summary(gap_ols)
 
 #fit glm logistic regression to train set
-gap_glm <- train_set_gap %>% glm(sale ~ ny_precip + ny_mean_temp + la_precip + la_mean_temp +  chi_precip + chi_mean_temp + hou_precip + hou_mean_temp + unemployment + holiday + gap_adj_close, data=. , family = "binomial")
+gap_glm <- train_set_gap %>% glm(sale ~ ny_precip + ny_mean_temp + la_precip + la_mean_temp +  chi_precip + chi_mean_temp + hou_precip + hou_mean_temp + unemployment + holiday + gap_adj_close + tte, data=. , family = "binomial")
 
 summary(gap_glm)
 
@@ -455,9 +455,6 @@ cm_gap_glm <- confusionMatrix(tab)
 cm_gap_glm$table
 cm_gap_glm$overall["Accuracy"]
 ```
-Accuracy
-ols: 
-glm: 94.6%
 
 
 LOFT
@@ -477,12 +474,12 @@ train_set_loft <- slice(loft, inTrain)
 test_set_loft <- slice(loft, -inTrain) 
 
 #fit OLS regression to train set
-loft_ols <- train_set_loft %>% lm(sale ~ ny_precip + ny_mean_temp + la_precip + la_mean_temp +  chi_precip + chi_mean_temp + hou_precip + hou_mean_temp + unemployment + holiday + loft_adj_close, data=.)
+loft_ols <- train_set_loft %>% lm(sale ~ ny_precip + ny_mean_temp + la_precip + la_mean_temp +  chi_precip + chi_mean_temp + hou_precip + hou_mean_temp + unemployment + holiday + loft_adj_close + tte, data=.)
 
 summary(loft_ols)
 
 #fit glm logistic regression to train set
-loft_glm <- train_set_loft %>% glm(sale ~ ny_precip + ny_mean_temp + la_precip + la_mean_temp +  chi_precip + chi_mean_temp + hou_precip + hou_mean_temp + unemployment + holiday + loft_adj_close, data=. , family = "binomial")
+loft_glm <- train_set_loft %>% glm(sale ~ ny_precip + ny_mean_temp + la_precip + la_mean_temp +  chi_precip + chi_mean_temp + hou_precip + hou_mean_temp + unemployment + holiday + loft_adj_close + tte, data=. , family = "binomial")
 
 summary(loft_glm)
 
@@ -511,8 +508,7 @@ cm_loft_glm$table
 cm_loft_glm$overall["Accuracy"]
 ```
 Accuracy:
-OLS: 86.9%
-GLM: 84.9%
+
 
 
 JCREW
@@ -530,7 +526,7 @@ train_set_jcrew <- slice(jcrew, inTrain)
 test_set_jcrew <- slice(jcrew, -inTrain) 
 
 #fit OLS regression to train set
-jcrew_ols <- train_set_jcrew %>% lm(sale ~ ny_precip + ny_mean_temp + la_precip + la_mean_temp +  chi_precip + chi_mean_temp + hou_precip + hou_mean_temp + unemployment + holiday, data=.)
+jcrew_ols <- train_set_jcrew %>% lm(sale ~ ny_precip + ny_mean_temp + la_precip + la_mean_temp +  chi_precip + chi_mean_temp + hou_precip + hou_mean_temp + unemployment + holiday +tte, data=.)
 
 summary(jcrew_ols)
 
