@@ -2,6 +2,16 @@
 title: "predicting sales"
 output: html_document
 ---
+#Team Members
+Emily Gao
+Rachel Brigell
+Nina Punukollu
+
+#Research question
+Do factors associated with conventional wisdom about retail sales help to predict retail sales?
+
+#Introduction
+As graduate students on tight budgets, we are constantly looking for the best deals on clothing. Clothing stores often have sales, but it’s hard to predict when those sales will take place. Conventional wisdom suggests that factors such as temperature, macroeconomic fluctuations, and holidays are reasonable predictors of retail sales. In this project, we gathered data on these types of factors and utilized basic modelling techniques and cross validation techniques to see if they were able to predict future retail sales. With the data and methods we used, we were unable to find associations between typical “conventional wisdom” factors and retail sales at four stores: Express, LOFT, Gap, and J Crew. 
 
 ```{r}
 rm(list = ls())
@@ -23,7 +33,19 @@ library(timeDate)
 library(data.table)
 ```
 
-1. Load and wrangle the data 
+#1. LOAD AND WRANGLE THE DATA 
+
+#Data
+Sales: To obtain a proxy for sales that are occurring at these stores, we used the Twitter API to obtain data from their accounts and used keyword analysis to identify days where they had sales. We attempted to select stores that had comparable styles of clothing and types of consumers. We did not distinguish between online and in-store sales. 
+
+Weather: We used the WeatherUnderground API to obtain temperature and precipitation data from 4 major cities in different regions of the United States: LA, New York, Chicago, and Houston. 
+
+Unemployment: We obtained monthly unemployment statistics from the US Bureau of Labor Statistics 
+
+Stock prices: We obtained daily stock prices for the stores that are publically listed from Yahoo Finance. 
+
+Holidays: We obtained US Holiday data from the R timeDate package. 
+
 ```{r}
 setwd('/Users/emilygao/Dropbox (Personal)/Spring 2015/Data Science/sales-predict-')
 
@@ -329,9 +351,37 @@ joined <- joined %>%
 write.csv(joined, file = "joined_for_visualization.csv", row.names=FALSE)
 ```
 
-2. EDA and visualizations
+#2. EDA and VISUALIZATIONS
+#Read in data
 ```{r}
+dat<-read_csv("joined_for_visualization.csv")
+```
 
+#Plot: Sales over time
+```{r}
+#Filter data for the correct date range
+dat<-dat%>%filter(date>="2015-01-01")
+
+#Create data set with date, store, and sale (Y/N)
+dat2<-dat%>%select(date,expresssale,loftsale,jcrewsale,gapsale)
+dat2<-gather(dat2,store,sale,2:5)
+dat2$store[dat2$store=="expresssale"]  <- "Express"
+dat2$store[dat2$store=="loftsale"]  <- "Loft"
+dat2$store[dat2$store=="gapsale"]  <- "Gap"
+dat2$store[dat2$store=="jcrewsale"]  <- "JCrew"
+
+#Create month/year column and monthly sales column
+dat2<-dat2%>%separate(col = `date`, into = c("year", "month", "day"))
+dat2<-dat2%>%group_by(month,store)%>%mutate(monthlysales=sum(sale))
+
+#New data frame with one line per month/year for each store
+dat3<-dat2%>%select(store,month,monthlysales)
+dat3<-unique(dat3)
+
+#Plot all stores on same graph for 2015
+p2<-ggplot(dat3, 
+           aes(month,monthlysales, color=store))
+p2+geom_point()+xlab("Month")+ylab("Number of Sales")+ggtitle("Sales by store in 2015")
 ```
 
 
@@ -343,13 +393,10 @@ write.csv(joined, file = "joined_for_visualization.csv", row.names=FALSE)
 
 
 
-3. Split data into training and test sets 70:30
 
-Use the following methods to build a model predicting sales on the training set:
-  1. OLS
-  2. logistic regression 
+#3. PREDICTIONS
   
-EXPRESS
+#EXPRESS
 ```{r}
 #filter for date of furthest tweet back
 express <- express %>% filter(date >= "2014-07-10" & date <= "2016-04-20")
@@ -407,7 +454,7 @@ GLM: 78.1%
 
 Rarely predicting "1" for both GLM and OLS
 
-GAP
+#GAP
 ```{r}
 #filter for date of furthest tweet back
 gap <- gap %>% filter(date >= "2015-02-12" & date <= "2016-04-20")
@@ -460,7 +507,7 @@ table(test_set_gap$accuracy_gap_glm)
 ```
 Always predicting "0" for both OLS and GLM
 
-LOFT
+#LOFT
 ```{r}
 loft <- loft %>% filter(date >= "2014-04-20" & date <= "2016-04-20")
 
@@ -512,7 +559,7 @@ table(test_set_loft$accuracy_loft_glm)
 ```
 Always predicting "0" for both OLS and GLM
 
-JCREW
+#JCREW
 ```{r}
 jcrew <- jcrew %>% filter(date >= "2013-09-25"& date <= "2016-04-20")
 
@@ -562,35 +609,9 @@ table(test_set_jcrew$accuracy_jcrew_glm)
 ```
 Always predicting "0" for both OLS and GLM
 
-#Read in data
-```{r}
-dat<-read_csv("joined_for_visualization.csv")
-```
 
-#Plot: Sales over time
-```{r}
-#Filter data for the correct date range
-dat<-dat%>%filter(date>="2015-01-01")
+#Discussion
+Both our OLS and our logistic regression models almost always predict that there is less than a 50% chance of a sale. This means that we can accurately predict when there is no sale, but our models aren’t meaningful for predicting when sales will happen. As a result, accuracy metrics do not fully communicate the appropriateness of our models for predicting the outcome of interest. In other words, accuracy metrics mainly reflect our ability to predict when there is no sale because we are almost always predicting a low chance of having a sale. This is because our predictor variables jointly have very limited predictive power on our outcome of interest “sale”. 
 
-#Create data set with date, store, and sale (Y/N)
-dat2<-dat%>%select(date,expresssale,loftsale,jcrewsale,gapsale)
-dat2<-gather(dat2,store,sale,2:5)
-dat2$store[dat2$store=="expresssale"]  <- "Express"
-dat2$store[dat2$store=="loftsale"]  <- "Loft"
-dat2$store[dat2$store=="gapsale"]  <- "Gap"
-dat2$store[dat2$store=="jcrewsale"]  <- "JCrew"
-
-#Create month/year column and monthly sales column
-dat2<-dat2%>%separate(col = `date`, into = c("year", "month", "day"))
-dat2<-dat2%>%group_by(month,store)%>%mutate(monthlysales=sum(sale))
-
-#New data frame with one line per month/year for each store
-dat3<-dat2%>%select(store,month,monthlysales)
-dat3<-unique(dat3)
-
-#Plot all stores on same graph for 2015
-p2<-ggplot(dat3, 
-           aes(month,monthlysales, color=store))
-p2+geom_point()+xlab("Month")+ylab("Number of Sales")+ggtitle("Sales by store in 2015")
-```
+Overall, these results likely point to the fact that factors outside of the predictors we have included in our model are those that are more strongly predictive of sales. It is also possible that the factors we included in our models impact sales with  time lag, which is not captured in the simple linear models that we have used. Given the data and methods we used, we were unable to find significant associations between “conventional wisdom” factors and retail sales at four stores: Express, LOFT, Gap, and J Crew. Some next steps we could take would be to consider other factors as predictors and to work with time lag models for longitudinal data to capture possible delayed reactions in the data. 
 
