@@ -361,11 +361,15 @@ train_set_express <- slice(express, inTrain)
 test_set_express <- slice(express, -inTrain) 
 
 #fit OLS regression to train set
-express_ols <- train_set_express %>% lm(sale ~ ny_snow + ny_mean_temp + ny_precip + la_mean_temp +la_precip + chi_snow + chi_mean_temp + chi_precip + hou_mean_temp + hou_precip + unemployment + expr_adj_close, data = .)
+express_ols <- train_set_express %>% lm(sale ~ ny_precip + ny_mean_temp + la_precip + la_mean_temp +  chi_precip + chi_mean_temp + hou_precip + hou_mean_temp + unemployment + holiday + expr_adj_close, data = .)
+
+summary(express_ols)
                                           
 #fit glm logistic regression to train set
-express_glm <- train_set_express %>% glm(sale ~ ny_snow + ny_mean_temp + ny_precip + la_mean_temp +la_precip + chi_snow + chi_mean_temp + chi_precip + hou_mean_temp + hou_precip + unemployment + expr_adj_close, data=. , family = "binomial")
+express_glm <- train_set_express %>% glm(sale ~ ny_precip + ny_mean_temp + la_precip + la_mean_temp +  chi_precip + chi_mean_temp + hou_precip + hou_mean_temp + unemployment + holiday + expr_adj_close, data=. , family = "binomial")
 
+summary(express_glm)
+                         
 #try ols on test set to check accuracy
 test_set_express <- mutate(test_set_express, fhat_express_ols = predict(express_ols, newdata = test_set_express, type = "response")) %>%
   mutate(pred_express_ols=round(fhat_express_ols)) %>% mutate(accuracy_express_ols = (ifelse(pred_express_ols == sale, 1, 0))) 
@@ -376,11 +380,12 @@ table(test_set_express$accuracy_express_ols)
 test_set_express <- mutate(test_set_express, fhat_express_glm = predict(express_glm, newdata = test_set_express, type = "response")) %>%
   mutate(pred_express_glm=round(fhat_express_glm)) %>% mutate(accuracy_express_glm = (ifelse(pred_express_glm == sale, 1, 0))) 
 
-table(test_set_express$accuracy_express_glm)
+table(prediction = test_set_express$pred_express_glm, truth = test_set_express$sale)
+table(test_set_express$sale)
 
 #confusion matrix ols
-tab <- table(test_set_express$pred_express_ols, test_set_express$sale)
-cm_express_ols <- confusionMatrix(tab)
+tab <- table(pred = test_set_express$pred_express_ols, truth = test_set_express$sale)
+cm_express_ols <- confusionMatrix(tab)$tab
 cm_express_ols$table
 cm_express_ols$overall["Accuracy"]
 
@@ -390,8 +395,8 @@ cm_express_glm <- confusionMatrix(tab)
 cm_express_glm $table
 cm_express_glm $overall["Accuracy"]
 ```
-OLS: 80.3% accuracy
-GLM: 80.3% accuracy???? Why is it the same? Check on this!
+
+Both our OLS and our glm models always predict that there is less than a 50% chance of a sale. This means that we always accuratly predict when there is no sale, but it isn't meanful for predicting when sales will happen. 
 
 GAP
 ```{r}
@@ -406,10 +411,14 @@ train_set_gap <- slice(gap, inTrain)
 test_set_gap <- slice(gap, -inTrain) 
 
 #fit OLS regression to train set
-gap_ols <- train_set_gap %>% lm(sale ~ ny_snow + ny_mean_temp + ny_precip + la_mean_temp +la_precip + chi_snow + chi_mean_temp + chi_precip + hou_mean_temp + hou_precip + unemployment + gap_adj_close, data=.)
+gap_ols <- train_set_gap %>% lm(sale ~ ny_precip + ny_mean_temp + la_precip + la_mean_temp +  chi_precip + chi_mean_temp + hou_precip + hou_mean_temp + unemployment + holiday +gap_adj_close, data=.)
+
+summary(gap_ols)
 
 #fit glm logistic regression to train set
-gap_glm <- train_set_gap %>% glm(sale ~ ny_snow + ny_mean_temp + ny_precip + la_mean_temp +la_precip + chi_snow + chi_mean_temp + chi_precip + hou_mean_temp + hou_precip + unemployment + gap_adj_close, data=. , family = "binomial")
+gap_glm <- train_set_gap %>% glm(sale ~ ny_precip + ny_mean_temp + la_precip + la_mean_temp +  chi_precip + chi_mean_temp + hou_precip + hou_mean_temp + unemployment + holiday + gap_adj_close, data=. , family = "binomial")
+
+summary(gap_glm)
 
 #try ols on test set to check accuracy
 test_set_gap <- mutate(test_set_gap, fhat_gap_ols = predict(gap_ols, newdata = test_set_gap, type = "response")) %>%
@@ -452,10 +461,14 @@ train_set_loft <- slice(loft, inTrain)
 test_set_loft <- slice(loft, -inTrain) 
 
 #fit OLS regression to train set
-loft_ols <- train_set_loft %>% lm(sale ~ ny_snow + ny_mean_temp + ny_precip + la_mean_temp +la_precip + chi_snow + chi_mean_temp + chi_precip + hou_mean_temp + hou_precip + unemployment + loft_adj_close, data=.)
+loft_ols <- train_set_loft %>% lm(sale ~ ny_precip + ny_mean_temp + la_precip + la_mean_temp +  chi_precip + chi_mean_temp + hou_precip + hou_mean_temp + unemployment + holiday + loft_adj_close, data=.)
+
+summary(loft_ols)
 
 #fit glm logistic regression to train set
-loft_glm <- train_set_loft %>% glm(sale ~ ny_snow + ny_mean_temp + ny_precip + la_mean_temp +la_precip + chi_snow + chi_mean_temp + chi_precip + hou_mean_temp + hou_precip + unemployment + loft_adj_close, data=. , family = "binomial")
+loft_glm <- train_set_loft %>% glm(sale ~ ny_precip + ny_mean_temp + la_precip + la_mean_temp +  chi_precip + chi_mean_temp + hou_precip + hou_mean_temp + unemployment + holiday + loft_adj_close, data=. , family = "binomial")
+
+summary(loft_glm)
 
 #try ols on test set to check accuracy
 test_set_loft <- mutate(test_set_loft, fhat_loft_ols = predict(loft_ols, newdata = test_set_loft, type = "response")) %>%
@@ -482,8 +495,8 @@ cm_loft_glm$table
 cm_loft_glm$overall["Accuracy"]
 ```
 Accuracy:
-OLS: 
-GLM: 85.4%
+OLS: 86.9%
+GLM: 84.9%
 
 
 JCREW
@@ -498,10 +511,14 @@ train_set_jcrew <- slice(jcrew, inTrain)
 test_set_jcrew <- slice(jcrew, -inTrain) 
 
 #fit OLS regression to train set
-jcrew_ols <- train_set_jcrew %>% lm(sale ~ ny_snow + ny_mean_temp + ny_precip + la_mean_temp +la_precip + chi_snow + chi_mean_temp + chi_precip + hou_mean_temp + hou_precip + unemployment, data=.)
+jcrew_ols <- train_set_jcrew %>% lm(sale ~ ny_precip + ny_mean_temp + la_precip + la_mean_temp +  chi_precip + chi_mean_temp + hou_precip + hou_mean_temp + unemployment + holiday, data=.)
+
+summary(jcrew_ols)
 
 #fit glm logistic regression to train set
-jcrew_glm <- train_set_jcrew %>% glm(sale ~ ny_snow + ny_mean_temp + ny_precip + la_mean_temp +la_precip + chi_snow + chi_mean_temp + chi_precip + hou_mean_temp + hou_precip + unemployment, data=. , family = "binomial")
+jcrew_glm <- train_set_jcrew %>% glm(sale ~ ny_precip + ny_mean_temp + la_precip + la_mean_temp +  chi_precip + chi_mean_temp + hou_precip + hou_mean_temp + unemployment + holiday, data=. , family = "binomial")
+
+summary(jcrew_glm)
 
 #try ols on test set to check accuracy
 test_set_jcrew <- mutate(test_set_jcrew, fhat_jcrew_ols = predict(jcrew_ols, newdata = test_set_jcrew, type = "response")) %>%
