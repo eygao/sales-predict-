@@ -559,3 +559,36 @@ cm_jcrew_glm <- confusionMatrix(tab)
 cm_jcrew_glm$table
 cm_jcrew_glm$overall["Accuracy"]
 ```
+
+#Read in data
+```{r}
+dat<-read_csv("joined_for_visualization.csv")
+```
+
+#Plot: Sales over time
+```{r}
+#Filter data for the correct date range
+dat<-dat%>%filter(date>="2015-01-01")
+
+#Create data set with date, store, and sale (Y/N)
+dat2<-dat%>%select(date,expresssale,loftsale,jcrewsale,gapsale)
+dat2<-gather(dat2,store,sale,2:5)
+dat2$store[dat2$store=="expresssale"]  <- "Express"
+dat2$store[dat2$store=="loftsale"]  <- "Loft"
+dat2$store[dat2$store=="gapsale"]  <- "Gap"
+dat2$store[dat2$store=="jcrewsale"]  <- "JCrew"
+
+#Create month/year column and monthly sales column
+dat2<-dat2%>%separate(col = `date`, into = c("year", "month", "day"))
+dat2<-dat2%>%group_by(month,store)%>%mutate(monthlysales=sum(sale))
+
+#New data frame with one line per month/year for each store
+dat3<-dat2%>%select(store,month,monthlysales)
+dat3<-unique(dat3)
+
+#Plot all stores on same graph for 2015
+p2<-ggplot(dat3, 
+           aes(month,monthlysales, color=store))
+p2+geom_point()+xlab("Month")+ylab("Number of Sales")+ggtitle("Sales by store in 2015")
+```
+

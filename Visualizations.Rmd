@@ -3,26 +3,41 @@ title: "Visualizations"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+#Set working directory, read in data
+```{r}
+library(readr)
+library(ggplot2)
+library(dplyr)
+library(lubridate)
+library(tidyr)
+setwd("~/Dropbox/HSPH/Spring 2 2016/BIO 260/sales-predict-")
+dat<-read_csv("joined_for_visualization.csv")
 ```
 
-## R Markdown
+#Plot 1: Sales over time
+```{r}
+min(dat$date)
+max(dat$date)
+dat<-dat%>%filter(date>="2013-03-01")
+dat<-mutate(dat,week=week(dat$date))
+#2014:
+dat2014<-dat%>%filter(date>="2014-01-01" & date<="2014-12-31")
+dat2014<-mutate(dat2014,week=week(dat2014$date))
+dat2014<-dat2014%>%group_by(week)%>%mutate(numsales_e=sum(expresssale), numsales_l=sum(loftsale),numsales_j=sum(jcrewsale),numsales_g=sum(gapsale),numsales_tot=numsales_e+numsales_j+numsales_l+numsales_g)
+#Plot of total sales by month
+p <- ggplot(dat2014, 
+            aes(week, y=numsales_tot))
+p+geom_point()
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+#Wrangling week data:
+dat2<-dat%>%select(date,week,expresssale,loftsale,jcrewsale,gapsale)
+#separate date into y,m,d
+dat2<-dat2%>%separate(col = `date`, into = c("y", "m", "d"))
+#sort data by year and week
+dat2 <- dat2[order(dat2$y, dat2$m, dat2$d, dat2$week),]
+#create an index for each week in order
+cut(dat2$week,week,labels=FALSE)
+slice(dat2,7:n())
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
