@@ -41,12 +41,15 @@ Weather: We used the WeatherUnderground API to obtain temperature and precipitat
 
 Unemployment: We obtained monthly unemployment statistics from the US Bureau of Labor Statistics 
 
-Stock prices: We obtained daily stock prices for the stores that are publically listed from Yahoo Finance. 
+Stock prices: We obtained daily stock prices for the stores that are publicly listed from Yahoo Finance. 
 
 Holidays: We obtained US Holiday data from the R timeDate package. 
 
-```{r}
+#Wrangling: Weather Data
 
+To measure seasonal weather patterns, we collected data using the WeatherUnderground API from four, highly populated cities in the United States: New York, Los Angeles, Chicago, and Houston. In the wrangling below, we selected mean temperature, amount of precipitation, and snow falls as variables to use in our analyses. We will later use these factors to estimate changes in seasons across the United States. We hypothesize that sales are more likely to happen as seasons changes. 
+
+```{r}
 ## Weather Wrangling - Creates One File for Weather
 #######################################################################
 
@@ -77,7 +80,14 @@ houston <- houston %>% select(date, snow, mean_temp, precip) %>%
 ny_la <- full_join(new_york, los_angeles, by = "date")
 ny_la_chi <- full_join(ny_la, chicago, by = "date")
 weather <- full_join(ny_la_chi, houston, by = "date")
+```
 
+#Wrangling: Stock Price Data
+
+We collected historical stock prices from Yahoo Finance for three of the four stores we are using in our analyses: Gap, Loft, and Express. We did not collect data from J Crew because J Crew is a privately held company. To measure stock prices, we are using the adjusted stock price, because it is the price that captures the total return (including dividends or spits). We hypothesize that a store's stock performance will impact weather or not the store has a sale (as store struggle financially, they may be more likely to hold sales). 
+
+
+```{r}
 ## Stock Wrangling - Create individual store files for stock prices
 #######################################################################
 
@@ -117,6 +127,13 @@ gap$Date <- as.Date(gap$Date, "%Y-%m-%d")
 # rename columns
 gap_stocks <- gap %>% select(Date, Adj.Close) %>%
   rename (date = Date, gap_adj_close = Adj.Close)
+```
+
+#Wrangling: Unemployment Data
+
+We collected monthly unemployment data from the Bureau of Labor Statistics. We wanted to use unemployment as a proxy for the economic climate in the United States. We hypothesize that during periods of high unemployment, stores may be more likely to have sales as a way to bring customers into theirs stores.  
+
+```{r}
 
 ## Unemployment Wrangling - Create one file for unemployment data
 #######################################################################
@@ -138,7 +155,13 @@ unemp$date_month = paste(unemp$Year, unemp$month, sep="-")
 # rename date column and select only year-month and unemployment columns
 unemp <- unemp %>% rename(date_y_m = date_month) %>% select(date_y_m, unemployment) %>%
   mutate(date_y_m = as.character(date_y_m))
+```
 
+#Wrangling: Joining Data
+
+We joined together the weather and unemployment data. To allow the data to be joined we needed to create a common value (year_month).
+
+```{r}
 ## Join Unemployment Data + Weather + Holidays
 #######################################################################
 
@@ -158,8 +181,14 @@ weather_unemp <- left_join(weather, unemp, by = "date_y_m")
 # remove year-month column
 weather_unemp <- weather_unemp %>% select(-date_y_m)
 
-# add in holiday data
+```
 
+#Wrangling: Holiday Data
+
+Using the Date.Time package, we created a dichotomous variable to denote weather a date in our data set is a holiday. Based on conventional wisdom, we hypothesize that sales are more likely to occur on National holidays. 
+
+```{r}
+# Add in holiday data
 # create vector of US holidays from 2013 - 2016
 holidays <- c(
   USChristmasDay(2012:2016),
@@ -197,7 +226,15 @@ weather_unemp <- left_join(weather_unemp, holidays, by = "date")
 
 weather_unemp <- weather_unemp %>% mutate(holiday = ifelse(is.na(holiday),0,holiday))
 
+```
 
+#Wrangling: Tweets
+
+We are using Twitter data identify whether or not a store had a sale on a particular date. After reviewing recent tweets from each of the four stores, we found that the stores generally use "sale" or "x% off" to announce sales. As a result, we separated the tweets in individual words and then filtered for the word "sale" and "off". 
+
+We also created a variable for time since last sale. We hypothesize that sales may occur on a regular cycle, so we want to test the extent to which time since last since predicts sales. 
+
+```{r}
 ## Wrangle Tweets -- Separate tweets into individual words 
 #######################################################################
 
@@ -310,6 +347,13 @@ loft_hist <- loft %>% filter(date > "2014-04-20")
 setDT(loft_hist)[,tte := seq.int(0,.N-1L), by = cumsum(sale)-sale]
 
 
+```
+
+#Wrangling: Data File for Visualization
+
+For the purposes of visualization, we created a joint file containing the relevant data from each of the four stores. 
+
+```{r}
 
 ## Create a joined file for visualization
 #######################################################################
@@ -385,7 +429,7 @@ dat<-read_csv("joined_for_visualization.csv")
 ```
 
 #Plot: Sales over time
-The plot for sales over time shows that Express and Loft have more sales per month compared to Gap and JCrew. In addition to having more sales, Express and Loft have greater variation in the number of sales per month. 
+The plot for sales over time shows that Express and Loft have more sales per month compared to Gap and J Crew. In addition to having more sales, Express and Loft have greater variation in the number of sales per month. 
 
 ```{r}
 #Filter data for the correct date range
@@ -415,7 +459,7 @@ p2+geom_point()+xlab("Month")+ylab("Number of Sales")+ggtitle("Sales by store in
 
 #Plot: Sales by Temperature & Holiday Over Time
 
-As shown in the below plot, there is no clear relationship between sales, average temperature, and holidays over time. 
+The plot below shows sales, average temperature, and holidays over time. The size of the points indicate number of sales across hospitals and the color of the points indicate holidays. There apperas to be no clear relationship between sales, average temperature, or holiday. 
 
 ```{r}
 # visualize weather over time, size = # sales, color = holiday
@@ -459,7 +503,7 @@ vis %>% filter(date > "2015-04-20") %>%
 ```
 
 #Plot: Histograms for Time From Last Sale
-The histograms below show the frequency of sales across stores. Among the four stores, Express has sales most frequently, while JCrew has sales least frequently.
+The histograms below show the frequency of sales across stores. Among the four stores, Express has sales most frequently, while J Crew has sales least frequently.
 
 ```{r}
 
@@ -494,7 +538,9 @@ hist(express_hist$tte,
 ```
 
 #3. Predictions
-  
+
+We wanted to determine whether changes in our predictors are associated in changes in the outcome, retail sales. OLS is a straightforward way of determining this relationship. We also fit logistic regression models to compare to OLS because we wanted to get predictions on a probability scale (our outcome variable is dichotomous). We conducted separate analyses for each of the four stores of interest. 
+
 #EXPRESS
 ```{r}
 #filter for date of furthest tweet back
@@ -551,7 +597,8 @@ Accuracy:
 OLS: 71.7%
 GLM: 78.1%
 
-Rarely predicting "1" for both GLM and OLS
+We are rarely predicting "1" for both GLM and OLS. This explains why we have high accuracy for predicting sales at Express even though none of the predictors we used in the model (temperature, precipitation, unemployment, holiday, stock price, time from last sale) are significant at the alpha = 0.05 level. 
+
 
 #GAP
 ```{r}
@@ -604,7 +651,7 @@ table(test_set_gap$accuracy_gap_glm)
 #cm_gap_glm$table
 #cm_gap_glm$overall["Accuracy"]
 ```
-Always predicting "0" for both OLS and GLM
+We are always predicting "0" for both OLS and GLM. Again, none of the predictors we used in the model (temperature, precipitation, unemployment, holiday, stock price, time from last sale) are significant at the alpha = 0.05 level. 
 
 #LOFT
 ```{r}
@@ -656,7 +703,7 @@ table(test_set_loft$accuracy_loft_glm)
 #cm_loft_glm$table
 #cm_loft_glm$overall["Accuracy"]
 ```
-Always predicting "0" for both OLS and GLM
+We are always predicting "0" for both OLS and GLM. Again, none of the predictors we used in the model (temperature, precipitation, unemployment, holiday, stock price, time from last sale) are significant at the alpha = 0.05 level. 
 
 #JCREW
 ```{r}
@@ -706,8 +753,7 @@ table(test_set_jcrew$accuracy_jcrew_glm)
 #cm_jcrew_glm$table
 #cm_jcrew_glm$overall["Accuracy"]
 ```
-Always predicting "0" for both OLS and GLM
-
+We are always predicting "0" for both OLS and GLM. Again, none of the predictors we used in the model (temperature, precipitation, unemployment, holiday, stock price, time from last sale) are significant at the alpha = 0.05 level. 
 
 #Discussion
 Both our OLS and our logistic regression models almost always predict that there is less than a 50% chance of a sale. This means that we can accurately predict when there is no sale, but our models aren’t meaningful for predicting when sales will happen. As a result, accuracy metrics do not fully communicate the appropriateness of our models for predicting the outcome of interest. In other words, accuracy metrics mainly reflect our ability to predict when there is no sale because we are almost always predicting a low chance of having a sale. This is because our predictor variables jointly have very limited predictive power on our outcome of interest “sale”. 
